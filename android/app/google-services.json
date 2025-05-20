@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "409935182718",
+    "project_id": "andeirapp",
+    "storage_bucket": "andeirapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:409935182718:android:ae4493210cd7f07d95912f",
+        "android_client_info": {
+          "package_name": "com.example.andeir_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCd_W--Z3376MrK7jaOoiSq9TMHyCMwi1Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
