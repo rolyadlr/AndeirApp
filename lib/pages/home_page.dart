@@ -1,15 +1,14 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
 import 'login_page.dart'; 
 import 'calendar_page.dart';
 import 'profile_page.dart';
 import 'messages_page.dart';
 
-
 class HomePage extends StatefulWidget {
-  final String userName;
-
-  const HomePage({super.key, required this.userName});
+  const HomePage({super.key});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -17,62 +16,97 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
-
   final List<Widget> _pages = [];
+
+  String? nombre;
+  String? correo;
+  String? telefono;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-      _pages.addAll([
-        _buildHomePage(),
-        const CalendarPage(),
-        const MessagesPage(),
-        const ProfilePage(),
-      ]);
+    _fetchUserData();
   }
+
+Future<void> _fetchUserData() async {
+  final uid = FirebaseAuth.instance.currentUser?.uid;
+  if (uid != null) {
+    try {
+      final doc = await FirebaseFirestore.instance.collection('usuarios').doc(uid).get();
+      if (doc.exists) {
+        final data = doc.data();
+        setState(() {
+          nombre = '${data?['nombres'] ?? ''} ${data?['apellidos'] ?? ''}';
+          correo = data?['correo'] ?? 'No especificado';
+          telefono = data?['celular'] ?? 'No especificado';
+          _isLoading = false;
+
+          _pages.addAll([
+            _buildHomePage(),
+            const CalendarPage(),
+            const MessagesPage(),
+            const ProfilePage(),
+          ]);
+        });
+      }
+    } catch (e) {
+      print('Error al obtener datos del usuario: $e');
+      // Aquí podrías mostrar un diálogo de error o un mensaje visual
+      setState(() => _isLoading = false);
+    }
+  }
+}
+
+
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: _pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
-  currentIndex: _currentIndex,
-  selectedItemColor: Colors.white,
-  unselectedItemColor: Colors.white70,
-  backgroundColor: const Color(0xFF3F51B5),
-  type: BottomNavigationBarType.fixed,
-  selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
-  unselectedLabelStyle: const TextStyle(fontSize: 12),
-  onTap: (index) {
-    setState(() {
-      _currentIndex = index;
-    });
-  },
-  items: const [
-    BottomNavigationBarItem(
-      icon: Icon(Icons.home_outlined),
-      activeIcon: Icon(Icons.home),
-      label: 'Inicio',
-    ),
-      BottomNavigationBarItem(
-      icon: Icon(Icons.calendar_today_outlined),
-      activeIcon: Icon(Icons.calendar_today),
-      label: 'Calendario',
-    ),
-    BottomNavigationBarItem(
-      icon: Icon(Icons.mail_outline),
-      activeIcon: Icon(Icons.mail),
-      label: 'Mensajes',
-    ),
-    BottomNavigationBarItem(
-      icon: Icon(Icons.person_outline),
-      activeIcon: Icon(Icons.person),
-      label: 'Perfil',
-    ),
-  ],
-),
-
+        currentIndex: _currentIndex,
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.white70,
+        backgroundColor: const Color(0xFF3F51B5),
+        type: BottomNavigationBarType.fixed,
+        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
+        unselectedLabelStyle: const TextStyle(fontSize: 12),
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: 'Inicio',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.calendar_today_outlined),
+            activeIcon: Icon(Icons.calendar_today),
+            label: 'Calendario',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.mail_outline),
+            activeIcon: Icon(Icons.mail),
+            label: 'Mensajes',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Perfil',
+          ),
+        ],
+      ),
     );
   }
 
@@ -83,13 +117,16 @@ class _HomePageState extends State<HomePage> {
         child: ListView(
           children: [
             Text(
-              '¡Bienvenido, ${widget.userName}!',
+              '¡Bienvenido, $nombre!',
               style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF3F51B5),
               ),
             ),
+            const SizedBox(height: 10),
+            Text('Correo: $correo'),
+            Text('Teléfono: $telefono'),
             const SizedBox(height: 20),
             const Text(
               'Tareas pendientes',

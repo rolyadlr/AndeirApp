@@ -18,7 +18,7 @@ class AuthGate extends StatelessWidget {
         }
         // Usuario autenticado
         if (snapshot.hasData) {
-          return const HomePage(userName: 'Usuario'); // o usar snapshot.data!.email
+          return const HomePage();
         }
         // Usuario no autenticado
         return const LoginPage();
