@@ -1,4 +1,10 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'login_page.dart'; 
+import 'calendar_page.dart';
+import 'profile_page.dart';
+import 'messages_page.dart';
+
 
 class HomePage extends StatefulWidget {
   final String userName;
@@ -17,12 +23,12 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _pages.addAll([
-      _buildHomePage(),
-      const Center(child: Text("Tareas", style: TextStyle(fontSize: 24))),
-      const Center(child: Text("Mensajes", style: TextStyle(fontSize: 24))),
-      const Center(child: Text("Perfil", style: TextStyle(fontSize: 24))),
-    ]);
+      _pages.addAll([
+        _buildHomePage(),
+        const CalendarPage(),
+        const MessagesPage(),
+        const ProfilePage(),
+      ]);
   }
 
   @override
@@ -31,24 +37,42 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: Colors.white,
       body: _pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.white70,
-        backgroundColor: const Color(0xFF3F51B5),
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.task), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.mail), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: ''),
-        ],
-      ),
+  currentIndex: _currentIndex,
+  selectedItemColor: Colors.white,
+  unselectedItemColor: Colors.white70,
+  backgroundColor: const Color(0xFF3F51B5),
+  type: BottomNavigationBarType.fixed,
+  selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
+  unselectedLabelStyle: const TextStyle(fontSize: 12),
+  onTap: (index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  },
+  items: const [
+    BottomNavigationBarItem(
+      icon: Icon(Icons.home_outlined),
+      activeIcon: Icon(Icons.home),
+      label: 'Inicio',
+    ),
+      BottomNavigationBarItem(
+      icon: Icon(Icons.calendar_today_outlined),
+      activeIcon: Icon(Icons.calendar_today),
+      label: 'Calendario',
+    ),
+    BottomNavigationBarItem(
+      icon: Icon(Icons.mail_outline),
+      activeIcon: Icon(Icons.mail),
+      label: 'Mensajes',
+    ),
+    BottomNavigationBarItem(
+      icon: Icon(Icons.person_outline),
+      activeIcon: Icon(Icons.person),
+      label: 'Perfil',
+    ),
+  ],
+),
+
     );
   }
 
@@ -116,7 +140,7 @@ class _HomePageState extends State<HomePage> {
         leading: Icon(icon, color: isPending ? Colors.orange : Colors.green),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(subtitle),
-        trailing: Icon(Icons.arrow_forward_ios, size: 16),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'login_page.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -17,36 +18,56 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController celularController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
-  Future<void> registrarUsuario(BuildContext context) async {
-    try {
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: correoController.text.trim(),
-        password: passwordController.text.trim(),
-      );
+Future<void> registrarUsuario(BuildContext context) async {
+  try {
+    // 1. Crear usuario en FirebaseAuth
+    UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      email: correoController.text.trim(),
+      password: passwordController.text.trim(),
+    );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Registro exitoso. Inicia sesión.')),
-      );
+    // 2. Obtener UID del usuario
+    String uid = userCredential.user!.uid;
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginPage()),
-      );
-    } on FirebaseAuthException catch (e) {
-      String mensaje = '';
-      if (e.code == 'email-already-in-use') {
-        mensaje = 'Este correo ya está en uso.';
-      } else if (e.code == 'weak-password') {
-        mensaje = 'La contraseña es muy débil.';
-      } else {
-        mensaje = 'Error: ${e.message}';
-      }
+    // 3. Guardar datos adicionales en Firestore
+    await FirebaseFirestore.instance.collection('usuarios').doc(uid).set({
+      'nombres': nombresController.text.trim(),
+      'apellidos': apellidosController.text.trim(),
+      'dni': dniController.text.trim(),
+      'correo': correoController.text.trim(),
+      'celular': celularController.text.trim(),
+      'foto_url': '', // Por ahora vacío, se puede actualizar en la vista de perfil
+    });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(mensaje)),
-      );
+    // 4. Mensaje y redirección
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Registro exitoso. Inicia sesión.')),
+    );
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginPage()),
+    );
+  } on FirebaseAuthException catch (e) {
+    String mensaje = '';
+    if (e.code == 'email-already-in-use') {
+      mensaje = 'Este correo ya está en uso.';
+    } else if (e.code == 'weak-password') {
+      mensaje = 'La contraseña es muy débil.';
+    } else {
+      mensaje = 'Error: ${e.message}';
     }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(mensaje)),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error inesperado: $e')),
+    );
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
