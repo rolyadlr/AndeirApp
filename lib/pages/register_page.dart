@@ -19,27 +19,53 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController passwordController = TextEditingController();
 
 Future<void> registrarUsuario(BuildContext context) async {
+  // Validaciones básicas
+  if (nombresController.text.isEmpty ||
+      apellidosController.text.isEmpty ||
+      dniController.text.isEmpty ||
+      correoController.text.isEmpty ||
+      celularController.text.isEmpty ||
+      passwordController.text.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Por favor, completa todos los campos')),
+    );
+    return;
+  }
+
+  if (passwordController.text.length < 6) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('La contraseña debe tener al menos 6 caracteres')),
+    );
+    return;
+  }
+
   try {
-    // 1. Crear usuario en FirebaseAuth
+    // Crear cuenta
     UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
       email: correoController.text.trim(),
       password: passwordController.text.trim(),
     );
 
-    // 2. Obtener UID del usuario
     String uid = userCredential.user!.uid;
 
-    // 3. Guardar datos adicionales en Firestore
     await FirebaseFirestore.instance.collection('usuarios').doc(uid).set({
       'nombres': nombresController.text.trim(),
       'apellidos': apellidosController.text.trim(),
       'dni': dniController.text.trim(),
       'correo': correoController.text.trim(),
       'celular': celularController.text.trim(),
-      'foto_url': '', // Por ahora vacío, se puede actualizar en la vista de perfil
+      'foto_url': '',
+      'rol': 'trabajador',
     });
 
-    // 4. Mensaje y redirección
+    // Limpiar campos
+    nombresController.clear();
+    apellidosController.clear();
+    dniController.clear();
+    correoController.clear();
+    celularController.clear();
+    passwordController.clear();
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Registro exitoso. Inicia sesión.')),
     );
@@ -67,6 +93,7 @@ Future<void> registrarUsuario(BuildContext context) async {
     );
   }
 }
+
 
 
   @override

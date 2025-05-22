@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'register_page.dart';
 import 'reset_password_page.dart';
-import 'home_page.dart'; // Asegúrate que esta página exista
+import 'home_page.dart'; 
+import 'Administrador/AdminHomePage.dart'; 
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -18,19 +21,36 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _login() async {
     try {
-      // Intentar iniciar sesión con correo y contraseña
+      // Intentar iniciar sesión con Firebase Auth
       await _auth.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
-      // Si tiene éxito, ir a la página principal
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const HomePage(),
-        ),
-      );
+      // Obtener el usuario actual
+      final user = _auth.currentUser;
+      if (user == null) throw FirebaseAuthException(code: 'user-not-found');
+
+      // Obtener el documento del usuario en Firestore
+      final userDoc = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(user.uid)
+          .get();
+
+      final rol = userDoc.data()?['rol'] ?? 'trabajador';
+
+      // Redirigir según el rol
+      if (rol == 'administrador') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AdminHomePage()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomePage()),
+        );
+      }
     } on FirebaseAuthException catch (e) {
       String message = 'Error al iniciar sesión';
       if (e.code == 'user-not-found') {
@@ -38,6 +58,7 @@ class _LoginPageState extends State<LoginPage> {
       } else if (e.code == 'wrong-password') {
         message = 'Contraseña incorrecta';
       }
+
       showDialog(
         context: context,
         builder: (_) => AlertDialog(
@@ -47,7 +68,21 @@ class _LoginPageState extends State<LoginPage> {
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text('OK'),
-            )
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Error inesperado'),
+          content: Text(e.toString()),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
           ],
         ),
       );
@@ -87,7 +122,19 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 20),
                     ElevatedButton(
-                      onPressed: _login,
+                        onPressed: () {
+                        if (_emailController.text.trim().isEmpty || _passwordController.text.trim().isEmpty) {
+                          showDialog(
+                            context: context,
+                            builder: (_) => const AlertDialog(
+                              title: Text('Campos vacíos'),
+                              content: Text('Por favor, completa todos los campos'),
+                            ),
+                          );
+                        } else {
+                          _login();
+                        }
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.indigo,
                       ),
