@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'login_page.dart';
 
-
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
@@ -27,6 +26,10 @@ class _ProfilePageState extends State<ProfilePage> {
   String? imageUrl;
   File? _imageFile;
 
+  final Color azulIndigo = const Color(0xFF002F6C);
+  final Color rojo = const Color(0xFFE53935);
+  final Color negro = Colors.black87;
+
   @override
   void initState() {
     super.initState();
@@ -38,7 +41,6 @@ class _ProfilePageState extends State<ProfilePage> {
     if (uid != null) {
       final doc = await _firestore.collection('usuarios').doc(uid).get();
       final data = doc.data();
-
       if (data != null) {
         nombresController.text = data['nombres'] ?? '';
         apellidosController.text = data['apellidos'] ?? '';
@@ -73,7 +75,6 @@ class _ProfilePageState extends State<ProfilePage> {
     if (uid == null) return;
 
     String? nuevaUrl = imageUrl;
-
     if (_imageFile != null) {
       nuevaUrl = await subirImagen(_imageFile!);
     }
@@ -87,28 +88,29 @@ class _ProfilePageState extends State<ProfilePage> {
       'fotoPerfil': nuevaUrl,
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Perfil actualizado')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Perfil actualizado')));
   }
 
   void cerrarSesion() async {
     final confirmar = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Cerrar sesión'),
-        content: const Text('¿Estás seguro de que deseas cerrar sesión?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Cerrar sesión'),
+            content: const Text('¿Estás seguro de que deseas cerrar sesión?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Cerrar sesión'),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Cerrar sesión'),
-          ),
-        ],
-      ),
     );
 
     if (confirmar == true) {
@@ -122,17 +124,22 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final avatar = _imageFile != null
-        ? FileImage(_imageFile!)
-        : (imageUrl != null ? NetworkImage(imageUrl!) : const AssetImage('assets/default_avatar.png'));
+    final avatar =
+        _imageFile != null
+            ? FileImage(_imageFile!)
+            : (imageUrl != null
+                ? NetworkImage(imageUrl!)
+                : const AssetImage('assets/default_avatar.png'));
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF4F6F8),
       appBar: AppBar(
-        title: const Text('Mi Perfil'),
-        backgroundColor: Colors.indigo,
+        backgroundColor: azulIndigo,
+        title: const Text('Mi Perfil', style: TextStyle(color: Colors.white)),
+        centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: cerrarSesion,
           ),
         ],
@@ -149,44 +156,75 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ),
             const SizedBox(height: 10),
-            const Text('Toca la imagen para cambiarla'),
-
+            Text(
+              'Toca la imagen para cambiarla',
+              style: TextStyle(color: negro),
+            ),
             const SizedBox(height: 30),
-            TextField(
-              controller: nombresController,
-              decoration: const InputDecoration(labelText: 'Nombres'),
+            buildInputField(Icons.person, 'Nombres', nombresController),
+            const SizedBox(height: 10),
+            buildInputField(
+              Icons.person_outline,
+              'Apellidos',
+              apellidosController,
             ),
             const SizedBox(height: 10),
-            TextField(
-              controller: apellidosController,
-              decoration: const InputDecoration(labelText: 'Apellidos'),
-            ),
+            buildInputField(Icons.badge, 'DNI', dniController),
             const SizedBox(height: 10),
-            TextField(
-              controller: dniController,
-              decoration: const InputDecoration(labelText: 'DNI'),
-            ),
+            buildInputField(Icons.phone, 'Celular', celularController),
             const SizedBox(height: 10),
-            TextField(
-              controller: celularController,
-              decoration: const InputDecoration(labelText: 'Celular'),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: correoController,
-              decoration: const InputDecoration(labelText: 'Correo'),
+            buildInputField(
+              Icons.email,
+              'Correo',
+              correoController,
               readOnly: true,
             ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-          onPressed: guardarCambios,
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo),
-          child: const Text(
-            'Guardar Cambios',
-            style: TextStyle(color: Colors.white),
-          ),
-        ),
+            const SizedBox(height: 30),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                onPressed: guardarCambios,
+                icon: const Icon(Icons.save),
+                label: const Text('Guardar Cambios'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: rojo,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget buildInputField(
+    IconData icon,
+    String label,
+    TextEditingController controller, {
+    bool readOnly = false,
+  }) {
+    return TextField(
+      controller: controller,
+      readOnly: readOnly,
+      decoration: InputDecoration(
+        prefixIcon: Icon(icon, color: azulIndigo),
+        labelText: label,
+        labelStyle: TextStyle(color: negro),
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: azulIndigo),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: rojo, width: 2),
+          borderRadius: BorderRadius.circular(10),
         ),
       ),
     );
