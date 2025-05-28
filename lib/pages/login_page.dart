@@ -20,6 +20,7 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final _formKey = GlobalKey<FormState>();
+  bool _obscurePassword = true;
 
   void _showDialog(String title, String message) {
     showDialog(
@@ -168,11 +169,24 @@ class _LoginPageState extends State<LoginPage> {
                         const SizedBox(height: 10),
                         TextFormField(
                           controller: _passwordController,
-                          obscureText: true,
-                          decoration: const InputDecoration(
+                          obscureText: _obscurePassword,
+                          decoration: InputDecoration(
                             labelText: 'Contraseña',
-                            prefixIcon: Icon(Icons.lock),
-                            border: OutlineInputBorder(),
+                            prefixIcon: const Icon(Icons.lock),
+                            border: const OutlineInputBorder(),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                                color: Colors.grey,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
+                            ),
                           ),
                           validator:
                               (value) =>
@@ -180,6 +194,7 @@ class _LoginPageState extends State<LoginPage> {
                                       ? 'Ingrese su contraseña'
                                       : null,
                         ),
+
                         const SizedBox(height: 20),
                         ElevatedButton.icon(
                           onPressed: _login,
