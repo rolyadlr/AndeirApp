@@ -2,19 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import 'register_page.dart';
 import 'reset_password_page.dart';
 import 'home_page.dart';
 import 'Administrador/AdminHomePage.dart';
-
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
-
 class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -46,17 +43,14 @@ class _LoginPageState extends State<LoginPage> {
       builder: (_) => const Center(child: CircularProgressIndicator()),
     );
   }
-
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
-
     _showLoadingDialog();
     try {
       await _auth.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
-
       final user = _auth.currentUser;
       final userDoc =
           await FirebaseFirestore.instance
@@ -64,7 +58,6 @@ class _LoginPageState extends State<LoginPage> {
               .doc(user!.uid)
               .get();
       final rol = userDoc.data()?['rol'] ?? 'trabajador';
-
       Navigator.pop(context);
 
       if (rol == 'administrador') {

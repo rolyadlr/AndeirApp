@@ -1,9 +1,10 @@
+// lib/pages/home_page.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'calendar_page.dart';
 import 'profile_page.dart';
-import 'messages_page.dart';
+import 'conversation_list_page.dart'; 
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -41,7 +42,7 @@ class _HomePageState extends State<HomePage> {
           _pages.addAll([
             _buildHomePage(uid!),
             const CalendarPage(),
-            const MessagesPage(),
+            const ConversationListPage(), 
             const ProfilePage(),
           ]);
 
@@ -66,7 +67,7 @@ class _HomePageState extends State<HomePage> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         selectedItemColor: Colors.red.shade700,
-        unselectedItemColor: Color(0xFF002F6C),
+        unselectedItemColor: const Color(0xFF002F6C),
         backgroundColor: Colors.white,
         elevation: 8,
         type: BottomNavigationBarType.fixed,
@@ -144,7 +145,7 @@ class _HomePageState extends State<HomePage> {
               children: [
                 Text(
                   'Hola, $nombre 👋',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF002F6C),

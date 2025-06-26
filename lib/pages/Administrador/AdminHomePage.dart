@@ -1,8 +1,9 @@
+// lib/pages/Administrador/AdminHomePage.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'asignacion_tareas_page.dart';
-import 'Admin_messages_page.dart';
+import 'admin_conversations_page.dart'; // <--- IMPORTACIÓN DE LA NUEVA PÁGINA
 import 'Admin_profile_page.dart';
 
 class AdminHomePage extends StatefulWidget {
@@ -23,7 +24,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
     _pages.addAll([
       _buildDashboardPage(),
       const AsignacionTareasPage(),
-      const MensajeriaPage(),
+      const AdminConversationsPage(), // <--- CAMBIADO A LA NUEVA PÁGINA DE CHAT PARA ADMIN
       const AdminMiCuentaPage(),
     ]);
   }

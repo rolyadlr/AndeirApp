@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'auth_gate.dart'; // nuevo archivo
+import 'services/auth_gate.dart'; 
 import 'services/admin_setup.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -21,7 +21,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Andeir App',
       debugShowCheckedModeBanner: false,
-      home: const AuthGate(), // Escoge Login o Home según el estado
+      home: const AuthGate(), 
     );
   }
   
