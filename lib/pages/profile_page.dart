@@ -5,6 +5,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'login_page.dart';
+import 'chatbot_page.dart'; // <--- Importación de la página del chatbot
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -180,6 +181,21 @@ class _ProfilePageState extends State<ProfilePage> {
               readOnly: true,
             ),
             const SizedBox(height: 30),
+            // --- NUEVA SECCIÓN PARA EL CHATBOT ---
+            ListTile(
+              leading: const Icon(Icons.support_agent, color: Color(0xFF002F6C)),
+              title: const Text('Preguntas Frecuentes (Asistente)'),
+              trailing: const Icon(Icons.arrow_forward_ios),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ChatbotPage()),
+                );
+              },
+            ),
+            const Divider(), // Línea divisoria opcional para separar
+            const SizedBox(height: 20), // Espacio adicional si lo deseas
+            // --- FIN DE LA SECCIÓN DEL CHATBOT ---
             SizedBox(
               width: double.infinity,
               height: 50,
