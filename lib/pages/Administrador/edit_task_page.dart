@@ -16,20 +16,18 @@ class EditTaskPage extends StatefulWidget {
 class _EditTaskPageState extends State<EditTaskPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Controladores y variables para la edición
   String? _selectedTrabajadorId;
   String? _selectedActividad;
   LatLng? _selectedLocation;
   DateTime? _selectedDate;
-  String? _selectedEstado; // Nuevo campo para el estado
+  String? _selectedEstado; 
 
   List<DocumentSnapshot> _trabajadores = [];
   List<String> _actividades = [];
-  List<String> _estados = ['pendiente', 'en progreso', 'completada', 'cancelada']; // Estados posibles
+  List<String> _estados = ['pendiente', 'en progreso', 'completada', 'cancelada']; 
 
   final MapController _mapController = MapController();
 
-  // Bandera para asegurar que el mapa se mueva solo una vez al inicio
   bool _initialMapMoved = false;
 
   @override
@@ -258,26 +256,24 @@ class _EditTaskPageState extends State<EditTaskPage> {
               SizedBox(
                 height: 300,
                 child: FlutterMap(
-                  mapController: _mapController, // Asignar el MapController
+                  mapController: _mapController, 
                   options: MapOptions(
-                    center: _selectedLocation ?? const LatLng(-12.0464, -77.0428), // Lima por defecto
+                    center: _selectedLocation ?? const LatLng(-12.0464, -77.0428),
                     zoom: 13,
                     onTap: (tapPosition, point) {
                       setState(() {
                         _selectedLocation = point;
                       });
-                      _mapController.move(point, _mapController.zoom); // Centrar el mapa en la nueva ubicación
+                      _mapController.move(point, _mapController.zoom); 
                     },
-                    // --- NUEVO: Callback para cuando el mapa está listo ---
                     onMapReady: () {
                       if (_selectedLocation != null && !_initialMapMoved) {
                         _mapController.move(_selectedLocation!, _mapController.zoom);
                         setState(() {
-                          _initialMapMoved = true; // Marca que ya se movió el mapa inicialmente
+                          _initialMapMoved = true;
                         });
                       }
                     },
-                    // -----------------------------------------------------
                   ),
                   children: [
                     TileLayer(

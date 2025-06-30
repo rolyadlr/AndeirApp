@@ -1,6 +1,7 @@
-extension StringCasingExtension on String { // Un nombre más descriptivo
-  String capitalizeFirst() { // Un nombre más específico para el método si quieres
+// lib/utils/string_extensions.dart
+extension StringCasingExtension on String {
+  String capitalizeFirst() {
     if (isEmpty) return this;
-    return "${this[0].toUpperCase()}${substring(1).toLowerCase()}"; // O solo .substring(1)
+    return "${this[0].toUpperCase()}${substring(1).toLowerCase()}";
   }
 }

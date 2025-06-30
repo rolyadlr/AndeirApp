@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'user_role_management_page.dart'; // Asegúrate de la ruta correcta
 
 import '../login_page.dart';
 
@@ -186,6 +187,28 @@ class _AdminMiCuentaPageState extends State<AdminMiCuentaPage> {
                 label: const Text('Guardar Cambios'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: rojo,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20), // Espacio entre botones
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const UserRoleManagementPage()),
+                  );
+                },
+                icon: const Icon(Icons.group), // Icono para gestión de usuarios
+                label: const Text('Gestionar Roles de Usuario'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: azulIndigo, // O el color que prefieras
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

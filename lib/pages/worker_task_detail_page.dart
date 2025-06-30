@@ -32,35 +32,32 @@ class _WorkerTaskDetailPageState extends State<WorkerTaskDetailPage> {
 
   // Datos de la tarea
   String? _actividad;
-  DateTime? _fecha; // <--- CAMBIO AQUÍ: Ahora es DateTime?
+  DateTime? _fecha; 
   LatLng? _ubicacion;
-  String? _usuarioAsignadoId; // ID del trabajador
-  String? _observacionesIniciales; // Si ya existen observaciones
-  List<String>? _fotosIniciales; // Si ya existen fotos
+  String? _usuarioAsignadoId; 
+  String? _observacionesIniciales; 
+  List<String>? _fotosIniciales; 
 
-  String _adminName = 'Cargando...'; // Para mostrar quién asignó la tarea
+  String _adminName = 'Cargando...'; 
 
-  // MapController para el mapa (aunque esté deshabilitada la interacción)
   final MapController _mapController = MapController();
-  bool _initialMapMoved = false; // Bandera para mover el mapa solo una vez
+  bool _initialMapMoved = false; 
 
   @override
   void initState() {
     super.initState();
     _loadTaskDetails();
-    _fetchAdminName(); // Este método ahora es más genérico
+    _fetchAdminName(); 
   }
 
   void _loadTaskDetails() {
     final data = widget.taskDocument.data() as Map<String, dynamic>;
     _actividad = data['actividad'];
 
-    // --- CAMBIO CLAVE AQUÍ: Leer la fecha como Timestamp y convertirla a DateTime ---
     final Timestamp? timestampFecha = data['fecha'] as Timestamp?;
-    _fecha = timestampFecha?.toDate(); // Asignar a DateTime?
-    // --------------------------------------------------------------------------------
+    _fecha = timestampFecha?.toDate(); 
 
-    _usuarioAsignadoId = data['usuario_asignado']; // Es el ID del trabajador
+    _usuarioAsignadoId = data['usuario_asignado']; 
     _currentEstado = data['ubicacion']?['estado'] ?? 'pendiente';
 
     if (data['ubicacion'] != null &&
@@ -78,55 +75,25 @@ class _WorkerTaskDetailPageState extends State<WorkerTaskDetailPage> {
     _photoUrls.addAll(_fotosIniciales!);
   }
 
-  // Si tienes un campo en la tarea que indique el ID del administrador que la creó,
-  // puedes usarlo aquí para buscar su nombre.
+  
   Future<void> _fetchAdminName() async {
-    // Ejemplo: Si tu tarea tiene un campo 'admin_uid'
-    // final adminUid = widget.taskDocument['admin_uid'];
-    // if (adminUid != null) {
-    //   try {
-    //     final adminDoc = await _firestore.collection('usuarios').doc(adminUid).get();
-    //     if (adminDoc.exists) {
-    //       final adminData = adminDoc.data();
-    //       setState(() {
-    //         _adminName = '${adminData?['nombres'] ?? ''} ${adminData?['apellidos'] ?? ''}';
-    //       });
-    //     } else {
-    //       setState(() {
-    //         _adminName = 'Administrador (ID no encontrado)';
-    //       });
-    //     }
-    //   } catch (e) {
-    //     print('Error fetching admin name: $e');
-    //     setState(() {
-    //       _adminName = 'Administrador (Error)';
-    //     });
-    //   }
-    // } else {
-    //   setState(() {
-    //     _adminName = 'Administrador'; // Valor por defecto si no hay admin_uid
-    //   });
-    // }
-    // Por ahora, lo mantenemos como un marcador de posición genérico
+    
     setState(() {
       _adminName = 'Administrador';
     });
   }
 
   Future<void> _takePhoto() async {
-    // 1. Obtener el usuario autenticado primero
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Error: No hay usuario autenticado. Por favor, inicia sesión.')),
       );
-      return; // Detiene la función si no hay usuario
+      return; 
     }
 
-    // 2. Ahora, toma la imagen
     final XFile? image = await _picker.pickImage(source: ImageSource.camera);
 
-    // 3. Procede solo si se seleccionó una imagen
     if (image != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Subiendo imagen...')),
@@ -157,12 +124,12 @@ class _WorkerTaskDetailPageState extends State<WorkerTaskDetailPage> {
         'ubicacion.estado': _currentEstado,
         'observaciones_trabajador': _observacionesController.text.trim(),
         'fotos_evidencia': _photoUrls,
-        'ultima_actualizacion_trabajador': FieldValue.serverTimestamp(), // Marca de tiempo
+        'ultima_actualizacion_trabajador': FieldValue.serverTimestamp(), 
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Estado y detalles de la tarea actualizados.')),
       );
-      Navigator.pop(context); // Volver a la página anterior después de actualizar
+      Navigator.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al actualizar la tarea: $e')),
@@ -170,15 +137,13 @@ class _WorkerTaskDetailPageState extends State<WorkerTaskDetailPage> {
     }
   }
 
-  // --- CAMBIO CLAVE AQUÍ: _formatFecha ahora recibe DateTime? ---
   String _formatFecha(DateTime? fecha) {
     if (fecha == null) return 'Fecha no especificada';
     return DateFormat('dd/MM/yyyy').format(fecha);
   }
 
   Future<void> _launchMapUrl(double lat, double lng) async {
-    // La URL de Google Maps para una ubicación específica
-    final url = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng'); // <--- CORRECCIÓN DE URL
+    final url = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng'); 
     
     if (await url_launcher.canLaunchUrl(url)) {
       await url_launcher.launchUrl(url);
@@ -218,7 +183,7 @@ class _WorkerTaskDetailPageState extends State<WorkerTaskDetailPage> {
               ),
               const SizedBox(height: 16),
 
-              _buildInfoRow(Icons.calendar_today, 'Fecha:', _formatFecha(_fecha)), // <--- CAMBIO AQUÍ
+              _buildInfoRow(Icons.calendar_today, 'Fecha:', _formatFecha(_fecha)), 
               const SizedBox(height: 10),
 
               _buildInfoRow(Icons.info_outline, 'Estado Actual:', _currentEstado!),
@@ -230,7 +195,7 @@ class _WorkerTaskDetailPageState extends State<WorkerTaskDetailPage> {
                 items: _estados.map((estado) {
                   return DropdownMenuItem(
                     value: estado,
-                    child: Text(estado.capitalize()), // Extensión para capitalizar
+                    child: Text(estado.capitalize()),
                   );
                 }).toList(),
                 onChanged: (value) {
@@ -327,21 +292,19 @@ class _WorkerTaskDetailPageState extends State<WorkerTaskDetailPage> {
                         SizedBox(
                           height: 200,
                           child: FlutterMap(
-                            mapController: _mapController, // Asigna el MapController
+                            mapController: _mapController, 
                             options: MapOptions(
                               center: _ubicacion!,
                               zoom: 15,
-                              interactiveFlags: InteractiveFlag.none, // Deshabilita la interacción
-                              // --- NUEVO: Callback para cuando el mapa está listo ---
+                              interactiveFlags: InteractiveFlag.none, 
                               onMapReady: () {
                                 if (_ubicacion != null && !_initialMapMoved) {
                                   _mapController.move(_ubicacion!, _mapController.zoom);
                                   setState(() {
-                                    _initialMapMoved = true; // Marca que ya se movió el mapa inicialmente
+                                    _initialMapMoved = true; 
                                   });
                                 }
                               },
-                              // -----------------------------------------------------
                             ),
                             children: [
                               TileLayer(
@@ -414,7 +377,6 @@ class _WorkerTaskDetailPageState extends State<WorkerTaskDetailPage> {
   }
 }
 
-// Extensión para capitalizar la primera letra de una cadena
 extension WorkerTaskStringExtension on String {
   String capitalize() {
     if (isEmpty) return this;

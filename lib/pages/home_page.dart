@@ -2,11 +2,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // <--- IMPORTACIÓN NECESARIA
+import 'package:intl/intl.dart'; 
 import 'calendar_page.dart';
 import 'profile_page.dart';
 import 'conversation_list_page.dart';
-import 'worker_task_detail_page.dart'; // <--- NUEVA IMPORTACIÓN: Página de detalles de tarea para trabajador
+import 'worker_task_detail_page.dart'; 
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -222,17 +222,14 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Modificación de _buildTaskCard para aceptar el DocumentSnapshot
   Widget _buildTaskCard({
-    required DocumentSnapshot taskDocument, // Ahora recibe el documento completo
+    required DocumentSnapshot taskDocument,
     required bool isPending,
   }) {
     final actividad = taskDocument['actividad'] ?? 'Actividad Desconocida';
     
-    // --- CAMBIO CLAVE AQUÍ: Leer la fecha como Timestamp y convertirla a DateTime ---
     final Timestamp? timestampFecha = taskDocument['fecha'] as Timestamp?;
-    final DateTime fecha = timestampFecha?.toDate() ?? DateTime.now(); // Convierte a DateTime
-    // --------------------------------------------------------------------------------
+    final DateTime fecha = timestampFecha?.toDate() ?? DateTime.now(); 
 
     final estado = taskDocument['ubicacion']?['estado'] ?? 'pendiente';
 
@@ -247,13 +244,11 @@ class _HomePageState extends State<HomePage> {
         ),
         title: Text(actividad, style: const TextStyle(fontWeight: FontWeight.w600)),
         subtitle: Text(
-          // --- CAMBIO: Usar el objeto DateTime 'fecha' para formatear ---
           'Fecha: ${DateFormat('dd/MM/yyyy').format(fecha)}\n' // Formatear fecha
-          'Estado: $estado', // Mostrar también el estado actual
+          'Estado: $estado', 
         ),
         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
         onTap: () {
-          // Navegar a la página de detalles de la tarea del trabajador
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -267,13 +262,4 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // <--- ELIMINA LA FUNCIÓN _formatFecha YA NO ES NECESARIA ---
-  // String _formatFecha(String fechaStr) {
-  //   try {
-  //     final fecha = DateTime.parse(fechaStr);
-  //     return '${fecha.day}/${fecha.month}/${fecha.year}';
-  //   } catch (_) {
-  //     return 'Fecha desconocida';
-  //   }
-  // }
 }

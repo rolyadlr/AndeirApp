@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_map/flutter_map.dart'; // <--- ESTA IMPORTACIÓN ES CLAVE
-import 'package:latlong2/latlong.dart'; // <--- Y ESTA TAMBIÉN
+import 'package:flutter_map/flutter_map.dart'; 
+import 'package:latlong2/latlong.dart'; 
 import 'package:table_calendar/table_calendar.dart';
 
 class AsignacionTareasPage extends StatefulWidget {

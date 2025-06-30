@@ -12,7 +12,7 @@ class ChatbotPage extends StatefulWidget {
 class _ChatbotPageState extends State<ChatbotPage> {
   final TextEditingController _messageController = TextEditingController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final List<Map<String, dynamic>> _messages = []; // Lista para almacenar mensajes del usuario y del bot
+  final List<Map<String, dynamic>> _messages = []; 
 
   @override
   void dispose() {
@@ -20,7 +20,6 @@ class _ChatbotPageState extends State<ChatbotPage> {
     super.dispose();
   }
 
-  // Método para manejar el envío de mensajes y la lógica del chatbot
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
@@ -30,14 +29,11 @@ class _ChatbotPageState extends State<ChatbotPage> {
     });
     _messageController.clear();
 
-    // Lógica para buscar la respuesta del chatbot
     String botResponse = "Lo siento, no tengo una respuesta para eso. Por favor, reformula tu pregunta o contacta a tu supervisor.";
     
     try {
-      // Convertir el texto a minúsculas para una búsqueda insensible a mayúsculas/minúsculas
       final lowerCaseText = text.toLowerCase();
 
-      // Buscar en Firestore por palabras clave
       final querySnapshot = await _firestore.collection('faq_chatbot').get();
 
       for (var doc in querySnapshot.docs) {
@@ -45,8 +41,6 @@ class _ChatbotPageState extends State<ChatbotPage> {
         final List<dynamic> keywords = data['keywords'] ?? [];
         final String answer = data['answer'] ?? '';
 
-        // Comprobar si alguna palabra clave coincide con el mensaje del usuario
-        // Aquí hacemos una búsqueda simple: si alguna palabra clave está contenida en el mensaje del usuario
         if (keywords.any((keyword) => lowerCaseText.contains(keyword.toLowerCase()))) {
           botResponse = answer;
           break; // Encontró una respuesta, salir del bucle
