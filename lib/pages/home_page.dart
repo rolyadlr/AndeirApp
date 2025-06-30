@@ -2,9 +2,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // <--- IMPORTACIÓN NECESARIA
 import 'calendar_page.dart';
 import 'profile_page.dart';
-import 'conversation_list_page.dart'; 
+import 'conversation_list_page.dart';
+import 'worker_task_detail_page.dart'; // <--- NUEVA IMPORTACIÓN: Página de detalles de tarea para trabajador
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -31,10 +33,7 @@ class _HomePageState extends State<HomePage> {
     if (uid != null) {
       try {
         final doc =
-            await FirebaseFirestore.instance
-                .collection('usuarios')
-                .doc(uid)
-                .get();
+            await FirebaseFirestore.instance.collection('usuarios').doc(uid).get();
         if (doc.exists) {
           final data = doc.data();
           nombre = '${data?['nombres'] ?? ''} ${data?['apellidos'] ?? ''}';
@@ -42,7 +41,7 @@ class _HomePageState extends State<HomePage> {
           _pages.addAll([
             _buildHomePage(uid!),
             const CalendarPage(),
-            const ConversationListPage(), 
+            const ConversationListPage(),
             const ProfilePage(),
           ]);
 
@@ -106,12 +105,11 @@ class _HomePageState extends State<HomePage> {
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: StreamBuilder<QuerySnapshot>(
-          stream:
-              FirebaseFirestore.instance
-                  .collection('tareas_asignadas')
-                  .where('usuario_asignado', isEqualTo: uid)
-                  .orderBy('fecha', descending: true)
-                  .snapshots(),
+          stream: FirebaseFirestore.instance
+              .collection('tareas_asignadas')
+              .where('usuario_asignado', isEqualTo: uid)
+              .orderBy('fecha', descending: true)
+              .snapshots(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
@@ -123,23 +121,21 @@ class _HomePageState extends State<HomePage> {
 
             final tareas = snapshot.data!.docs;
 
-            final pendientes =
-                tareas
-                    .where(
-                      (t) =>
-                          (t['ubicacion']?['estado'] ?? 'pendiente') ==
-                          'pendiente',
-                    )
-                    .toList();
+            final pendientes = tareas
+                .where(
+                  (t) =>
+                      (t['ubicacion']?['estado'] ?? 'pendiente') ==
+                      'pendiente',
+                )
+                .toList();
 
-            final completadas =
-                tareas
-                    .where(
-                      (t) =>
-                          (t['ubicacion']?['estado'] ?? 'pendiente') !=
-                          'pendiente',
-                    )
-                    .toList();
+            final completadas = tareas
+                .where(
+                  (t) =>
+                      (t['ubicacion']?['estado'] ?? 'pendiente') !=
+                      'pendiente',
+                )
+                .toList();
 
             return ListView(
               children: [
@@ -164,13 +160,9 @@ class _HomePageState extends State<HomePage> {
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
                 const SizedBox(height: 10),
+                // Modificar el map para pasar el documento completo
                 ...pendientes.map(
-                  (t) => _buildTaskCard(
-                    isPending: true,
-                    title: t['actividad'] ?? 'Actividad',
-                    subtitle: _formatFecha(t['fecha']),
-                    icon: Icons.assignment,
-                  ),
+                  (t) => _buildTaskCard(taskDocument: t, isPending: true),
                 ),
                 const SizedBox(height: 20),
                 const Text(
@@ -178,13 +170,9 @@ class _HomePageState extends State<HomePage> {
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
                 const SizedBox(height: 10),
+                // Modificar el map para pasar el documento completo
                 ...completadas.map(
-                  (t) => _buildTaskCard(
-                    isPending: false,
-                    title: t['actividad'] ?? 'Actividad',
-                    subtitle: _formatFecha(t['fecha']),
-                    icon: Icons.check_circle,
-                  ),
+                  (t) => _buildTaskCard(taskDocument: t, isPending: false),
                 ),
               ],
             );
@@ -234,34 +222,58 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // Modificación de _buildTaskCard para aceptar el DocumentSnapshot
   Widget _buildTaskCard({
+    required DocumentSnapshot taskDocument, // Ahora recibe el documento completo
     required bool isPending,
-    required String title,
-    required String subtitle,
-    required IconData icon,
   }) {
+    final actividad = taskDocument['actividad'] ?? 'Actividad Desconocida';
+    
+    // --- CAMBIO CLAVE AQUÍ: Leer la fecha como Timestamp y convertirla a DateTime ---
+    final Timestamp? timestampFecha = taskDocument['fecha'] as Timestamp?;
+    final DateTime fecha = timestampFecha?.toDate() ?? DateTime.now(); // Convierte a DateTime
+    // --------------------------------------------------------------------------------
+
+    final estado = taskDocument['ubicacion']?['estado'] ?? 'pendiente';
+
     return Card(
       elevation: 2,
       margin: const EdgeInsets.symmetric(vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
         leading: Icon(
-          icon,
+          isPending ? Icons.assignment : Icons.check_circle,
           color: isPending ? Colors.red.shade600 : Colors.green.shade600,
         ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text(subtitle),
+        title: Text(actividad, style: const TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: Text(
+          // --- CAMBIO: Usar el objeto DateTime 'fecha' para formatear ---
+          'Fecha: ${DateFormat('dd/MM/yyyy').format(fecha)}\n' // Formatear fecha
+          'Estado: $estado', // Mostrar también el estado actual
+        ),
         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+        onTap: () {
+          // Navegar a la página de detalles de la tarea del trabajador
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => WorkerTaskDetailPage(
+                taskDocument: taskDocument,
+              ),
+            ),
+          );
+        },
       ),
     );
   }
 
-  String _formatFecha(String fechaStr) {
-    try {
-      final fecha = DateTime.parse(fechaStr);
-      return '${fecha.day}/${fecha.month}/${fecha.year}';
-    } catch (_) {
-      return 'Fecha desconocida';
-    }
-  }
+  // <--- ELIMINA LA FUNCIÓN _formatFecha YA NO ES NECESARIA ---
+  // String _formatFecha(String fechaStr) {
+  //   try {
+  //     final fecha = DateTime.parse(fechaStr);
+  //     return '${fecha.day}/${fecha.month}/${fecha.year}';
+  //   } catch (_) {
+  //     return 'Fecha desconocida';
+  //   }
+  // }
 }

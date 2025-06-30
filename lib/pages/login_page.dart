@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'register_page.dart';
 import 'reset_password_page.dart';
 import 'home_page.dart';
-import 'Administrador/AdminHomePage.dart';
+import 'Administrador/admin_home_page.dart';
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 

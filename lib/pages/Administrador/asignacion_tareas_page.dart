@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:flutter_map/flutter_map.dart'; // <--- ESTA IMPORTACIÓN ES CLAVE
+import 'package:latlong2/latlong.dart'; // <--- Y ESTA TAMBIÉN
 import 'package:table_calendar/table_calendar.dart';
 
 class AsignacionTareasPage extends StatefulWidget {
@@ -70,10 +70,11 @@ class _AsignacionTareasPageState extends State<AsignacionTareasPage> {
       return;
     }
 
+    // *** CAMBIO CLAVE AQUÍ: Guarda la fecha como Timestamp ***
     await FirebaseFirestore.instance.collection('tareas_asignadas').add({
       'usuario_asignado': trabajadorSeleccionado!.id,
       'actividad': actividadSeleccionada,
-      'fecha': _selectedDay!.toIso8601String(),
+      'fecha': Timestamp.fromDate(_selectedDay!), // <-- CAMBIO HECHO AQUÍ
       'ubicacion': {
         'lat': ubicacionSeleccionada!.latitude,
         'lng': ubicacionSeleccionada!.longitude,

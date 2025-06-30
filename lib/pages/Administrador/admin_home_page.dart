@@ -1,10 +1,11 @@
 // lib/pages/Administrador/AdminHomePage.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'package:intl/intl.dart'; // Importa intl para formatear la fecha
 import 'asignacion_tareas_page.dart';
-import 'admin_conversations_page.dart'; // <--- IMPORTACIÓN DE LA NUEVA PÁGINA
-import 'Admin_profile_page.dart';
+import 'admin_conversations_page.dart';
+import 'Admin_profile_page.dart'; 
+import 'edit_task_page.dart'; 
 
 class AdminHomePage extends StatefulWidget {
   const AdminHomePage({super.key});
@@ -24,8 +25,8 @@ class _AdminHomePageState extends State<AdminHomePage> {
     _pages.addAll([
       _buildDashboardPage(),
       const AsignacionTareasPage(),
-      const AdminConversationsPage(), // <--- CAMBIADO A LA NUEVA PÁGINA DE CHAT PARA ADMIN
-      const AdminMiCuentaPage(),
+      const AdminConversationsPage(),
+      const AdminMiCuentaPage(), 
     ]);
   }
 
@@ -37,11 +38,10 @@ class _AdminHomePageState extends State<AdminHomePage> {
 
   Widget _buildDashboardPage() {
     return StreamBuilder<QuerySnapshot>(
-      stream:
-          FirebaseFirestore.instance
-              .collection('tareas_asignadas')
-              .orderBy('fecha', descending: true)
-              .snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('tareas_asignadas')
+          .orderBy('fecha', descending: true)
+          .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -53,20 +53,16 @@ class _AdminHomePageState extends State<AdminHomePage> {
 
         final tareas = snapshot.data!.docs;
 
-        final pendientes =
-            tareas
-                .where(
-                  (t) =>
-                      (t['ubicacion']?['estado'] ?? 'pendiente') == 'pendiente',
-                )
-                .toList();
-        final completadas =
-            tareas
-                .where(
-                  (t) =>
-                      (t['ubicacion']?['estado'] ?? 'pendiente') != 'pendiente',
-                )
-                .toList();
+        final pendientes = tareas
+            .where(
+              (t) => (t['ubicacion']?['estado'] ?? 'pendiente') == 'pendiente',
+            )
+            .toList();
+        final completadas = tareas
+            .where(
+              (t) => (t['ubicacion']?['estado'] ?? 'pendiente') != 'pendiente',
+            )
+            .toList();
 
         return SafeArea(
           child: Padding(
@@ -150,28 +146,32 @@ class _AdminHomePageState extends State<AdminHomePage> {
     );
   }
 
+  // MODIFICACIÓN IMPORTANTE AQUÍ: onTap en _buildTaskCard
   Widget _buildTaskCard(QueryDocumentSnapshot tarea, bool isPending) {
     final actividad = tarea['actividad'] ?? 'Sin actividad';
-    final fecha = DateTime.tryParse(tarea['fecha'] ?? '') ?? DateTime.now();
+    
+    // --- CAMBIO CLAVE: Leer la fecha como Timestamp y convertirla a DateTime ---
+    final Timestamp? timestampFecha = tarea['fecha'] as Timestamp?;
+    final DateTime fecha = timestampFecha?.toDate() ?? DateTime.now(); // Convierte a DateTime
+    // -------------------------------------------------------------------------
+
     final estado = tarea['ubicacion']?['estado'] ?? 'pendiente';
     final usuarioId = tarea['usuario_asignado'];
 
     return FutureBuilder<DocumentSnapshot>(
-      future:
-          FirebaseFirestore.instance
-              .collection('usuarios')
-              .doc(usuarioId)
-              .get(),
+      future: FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(usuarioId)
+          .get(),
       builder: (context, userSnapshot) {
         if (userSnapshot.connectionState == ConnectionState.waiting) {
           return const ListTile(title: Text("Cargando usuario..."));
         }
 
         final usuario = userSnapshot.data;
-        final nombre =
-            usuario != null
-                ? '${usuario['nombres']} ${usuario['apellidos']}'
-                : 'Usuario desconocido';
+        final nombre = usuario != null
+            ? '${usuario['nombres']} ${usuario['apellidos']}'
+            : 'Usuario desconocido';
 
         return Card(
           elevation: 2,
@@ -189,11 +189,23 @@ class _AdminHomePageState extends State<AdminHomePage> {
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             subtitle: Text(
+              // --- CAMBIO: Usar el objeto DateTime 'fecha' para formatear ---
               'Asignado a: $nombre\n'
-              'Fecha: ${fecha.day}/${fecha.month}/${fecha.year}\n'
+              'Fecha: ${DateFormat('dd/MM/yyyy').format(fecha)}\n' // Formatear fecha
               'Estado: $estado',
             ),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            onTap: () {
+              // Navegar a la página de edición de tareas
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EditTaskPage(
+                    taskDocument: tarea, // Pasamos el documento completo de la tarea
+                  ),
+                ),
+              );
+            },
           ),
         );
       },
