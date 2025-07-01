@@ -3,11 +3,9 @@ import 'dart:io'; // Para File
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart'; // Nuevo: Para seleccionar imágenes
 import 'package:cached_network_image/cached_network_image.dart'; // Nuevo: Para mostrar imágenes
 import 'package:intl/intl.dart'; // Para formatear la hora
-import 'package:provider/provider.dart'; // Nuevo: Para el typing indicator
 
 import '../../services/chat_service.dart';
 import '../../models/message.dart';

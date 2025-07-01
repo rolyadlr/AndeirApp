@@ -29,7 +29,7 @@ dependencies:
 dev_dependencies: 
   flutter_test:
     sdk: flutter
-
+  flutter_launcher_icons: "^0.13.1"
   flutter_lints: ^5.0.0 
 
 flutter:
@@ -38,3 +38,8 @@ flutter:
   assets:
     - assets/logo.png
     - assets/default_avatar.png
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: false
+  image_path: "assets/my_icon.png"
