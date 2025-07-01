@@ -9,20 +9,22 @@ environment:
   sdk: ^3.7.2
 
 dependencies:
-  google_fonts: ^6.1.0
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
   image_picker: ^1.1.2 
-  url_launcher: ^6.3.0 # <--- AÑADE ESTA LÍNEA AQUÍ
+  url_launcher: ^6.3.0 
+  cached_network_image: ^3.3.0
   table_calendar: ^3.0.9
   firebase_core: ^3.13.1
   firebase_auth: ^5.5.4
+  google_fonts: 6.2.1
   cloud_firestore: 5.6.8
   firebase_storage: 12.4.6      
   flutter_map: ^6.1.0
   latlong2: ^0.9.1
   intl: ^0.18.1 
+  provider: ^6.0.5
 
 dev_dependencies: 
   flutter_test:

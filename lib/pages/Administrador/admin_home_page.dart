@@ -1,11 +1,12 @@
 // lib/pages/Administrador/AdminHomePage.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:intl/intl.dart'; 
+import 'package:intl/intl.dart';
 import 'asignacion_tareas_page.dart';
 import 'admin_conversations_page.dart';
-import 'Admin_profile_page.dart'; 
-import 'edit_task_page.dart'; 
+import 'Admin_profile_page.dart';
+import 'edit_task_page.dart';
+import 'view_task_report_page.dart'; 
 
 class AdminHomePage extends StatefulWidget {
   const AdminHomePage({super.key});
@@ -26,7 +27,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
       _buildDashboardPage(),
       const AsignacionTareasPage(),
       const AdminConversationsPage(),
-      const AdminMiCuentaPage(), 
+      const AdminMiCuentaPage(),
     ]);
   }
 
@@ -34,6 +35,45 @@ class _AdminHomePageState extends State<AdminHomePage> {
     setState(() {
       _selectedIndex = index;
     });
+  }
+
+  // Method to delete a task
+  Future<void> _deleteTask(DocumentSnapshot taskDocument) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar Eliminación'),
+        content: const Text('¿Estás seguro de que quieres eliminar esta tarea?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Eliminar', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await FirebaseFirestore.instance.collection('tareas_asignadas').doc(taskDocument.id).delete();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Tarea eliminada correctamente')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error al eliminar la tarea: $e')),
+          );
+        }
+      }
+    }
   }
 
   Widget _buildDashboardPage() {
@@ -54,14 +94,16 @@ class _AdminHomePageState extends State<AdminHomePage> {
         final tareas = snapshot.data!.docs;
 
         final pendientes = tareas
-            .where(
-              (t) => (t['ubicacion']?['estado'] ?? 'pendiente') == 'pendiente',
-            )
+            .where((t) => (t['ubicacion']?['estado'] ?? 'pendiente') == 'pendiente')
+            .toList();
+        final enProgreso = tareas
+            .where((t) => (t['ubicacion']?['estado'] ?? 'pendiente') == 'en progreso')
             .toList();
         final completadas = tareas
-            .where(
-              (t) => (t['ubicacion']?['estado'] ?? 'pendiente') != 'pendiente',
-            )
+            .where((t) => (t['ubicacion']?['estado'] ?? 'pendiente') == 'completada')
+            .toList();
+        final canceladas = tareas
+            .where((t) => (t['ubicacion']?['estado'] ?? 'pendiente') == 'cancelada')
             .toList();
 
         return SafeArea(
@@ -83,21 +125,40 @@ class _AdminHomePageState extends State<AdminHomePage> {
                   style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                 ),
                 const SizedBox(height: 20),
-                _buildTaskCounter(pendientes.length, completadas.length),
+                _buildTaskCounter(
+                  pendientes.length,
+                  enProgreso.length,
+                  completadas.length,
+                  canceladas.length,
+                ),
                 const SizedBox(height: 20),
                 const Text(
                   'Tareas pendientes',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
                 const SizedBox(height: 10),
-                ...pendientes.map((t) => _buildTaskCard(t, true)),
+                ...pendientes.map((t) => _buildTaskCard(t)),
+                const SizedBox(height: 20),
+                const Text(
+                  'Tareas en progreso',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+                const SizedBox(height: 10),
+                ...enProgreso.map((t) => _buildTaskCard(t)),
                 const SizedBox(height: 20),
                 const Text(
                   'Tareas completadas',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
                 const SizedBox(height: 10),
-                ...completadas.map((t) => _buildTaskCard(t, false)),
+                ...completadas.map((t) => _buildTaskCard(t)),
+                const SizedBox(height: 20),
+                const Text(
+                  'Tareas canceladas',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+                const SizedBox(height: 10),
+                ...canceladas.map((t) => _buildTaskCard(t)),
               ],
             ),
           ),
@@ -106,57 +167,89 @@ class _AdminHomePageState extends State<AdminHomePage> {
     );
   }
 
-  Widget _buildTaskCounter(int pendientes, int completadas) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+  Widget _buildTaskCounter(
+      int pendientes, int enProgreso, int completadas, int canceladas) {
+    return Column(
       children: [
-        _buildCounterBox('Pendientes', pendientes, Colors.red.shade700),
-        _buildCounterBox(
-          'Completadas',
-          completadas,
-          const Color.fromARGB(255, 121, 118, 118),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildCounterBox('Pendientes', pendientes, Colors.red.shade700),
+            _buildCounterBox('En Progreso', enProgreso, Colors.orange.shade700),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildCounterBox('Completadas', completadas, Colors.green.shade700),
+            _buildCounterBox('Canceladas', canceladas, Colors.grey.shade700),
+          ],
         ),
       ],
     );
   }
 
   Widget _buildCounterBox(String label, int count, Color color) {
-    return Container(
-      width: 150,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color),
-      ),
-      child: Column(
-        children: [
-          Text(
-            '$count',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: color,
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 5),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color),
+        ),
+        child: Column(
+          children: [
+            Text(
+              '$count',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(label, style: TextStyle(color: color)),
-        ],
+            const SizedBox(height: 4),
+            Text(label, style: TextStyle(color: color)),
+          ],
+        ),
       ),
     );
   }
 
-  // MODIFICACIÓN IMPORTANTE AQUÍ: onTap en _buildTaskCard
-  Widget _buildTaskCard(QueryDocumentSnapshot tarea, bool isPending) {
+  Widget _buildTaskCard(QueryDocumentSnapshot tarea) {
     final actividad = tarea['actividad'] ?? 'Sin actividad';
-    
-    // --- CAMBIO CLAVE: Leer la fecha como Timestamp y convertirla a DateTime ---
+
     final Timestamp? timestampFecha = tarea['fecha'] as Timestamp?;
-    final DateTime fecha = timestampFecha?.toDate() ?? DateTime.now(); // Convierte a DateTime
-    // -------------------------------------------------------------------------
+    final DateTime fecha = timestampFecha?.toDate() ?? DateTime.now();
 
     final estado = tarea['ubicacion']?['estado'] ?? 'pendiente';
     final usuarioId = tarea['usuario_asignado'];
+
+    IconData statusIcon;
+    Color statusColor;
+    switch (estado) {
+      case 'pendiente':
+        statusIcon = Icons.assignment;
+        statusColor = Colors.red.shade600;
+        break;
+      case 'en progreso':
+        statusIcon = Icons.hourglass_empty;
+        statusColor = Colors.orange.shade600;
+        break;
+      case 'completada':
+        statusIcon = Icons.check_circle;
+        statusColor = Colors.green.shade600;
+        break;
+      case 'cancelada':
+        statusIcon = Icons.cancel;
+        statusColor = Colors.grey.shade600;
+        break;
+      default:
+        statusIcon = Icons.assignment;
+        statusColor = Colors.grey;
+    }
 
     return FutureBuilder<DocumentSnapshot>(
       future: FirebaseFirestore.instance
@@ -170,7 +263,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
 
         final usuario = userSnapshot.data;
         final nombre = usuario != null
-            ? '${usuario['nombres']} ${usuario['apellidos']}'
+            ? '${usuario['nombres'] ?? ''} ${usuario['apellidos'] ?? ''}'
             : 'Usuario desconocido';
 
         return Card(
@@ -181,31 +274,92 @@ class _AdminHomePageState extends State<AdminHomePage> {
           ),
           child: ListTile(
             leading: Icon(
-              isPending ? Icons.assignment : Icons.check_circle,
-              color: isPending ? Colors.red.shade600 : Colors.green.shade600,
+              statusIcon,
+              color: statusColor,
             ),
             title: Text(
               actividad,
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             subtitle: Text(
-              // --- CAMBIO: Usar el objeto DateTime 'fecha' para formatear ---
               'Asignado a: $nombre\n'
-              'Fecha: ${DateFormat('dd/MM/yyyy').format(fecha)}\n' // Formatear fecha
+              'Fecha: ${DateFormat('dd/MM/yyyy').format(fecha)}\n'
               'Estado: $estado',
             ),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: () {
-              // Navegar a la página de edición de tareas
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => EditTaskPage(
-                    taskDocument: tarea, // Pasamos el documento completo de la tarea
-                  ),
-                ),
-              );
+              _showTaskOptions(context, tarea, estado);
             },
+          ),
+        );
+      },
+    );
+  }
+
+  void _showTaskOptions(
+      BuildContext context, DocumentSnapshot taskDocument, String estado) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext bc) {
+        return SafeArea(
+          child: Wrap(
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.info_outline),
+                title: const Text('Ver Detalles de la Tarea'),
+                onTap: () {
+                  Navigator.pop(bc); // Close the bottom sheet
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ViewTaskReportPage(
+                        taskDocument: taskDocument,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              if (estado != 'completada' && estado != 'cancelada')
+                ListTile(
+                  leading: const Icon(Icons.edit),
+                  title: const Text('Editar Tarea'),
+                  onTap: () {
+                    Navigator.pop(bc); // Close the bottom sheet
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => EditTaskPage(
+                          taskDocument: taskDocument,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              if (estado == 'completada' || estado == 'cancelada')
+                ListTile(
+                  leading: const Icon(Icons.edit),
+                  title: const Text('Editar Tarea (Solo para completadas/canceladas)'),
+                  onTap: () {
+                    Navigator.pop(bc); // Close the bottom sheet
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => EditTaskPage(
+                          taskDocument: taskDocument,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: const Text('Eliminar Tarea', style: TextStyle(color: Colors.red)),
+                onTap: () {
+                  Navigator.pop(bc); // Close the bottom sheet
+                  _deleteTask(taskDocument);
+                },
+              ),
+            ],
           ),
         );
       },

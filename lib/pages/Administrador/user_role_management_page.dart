@@ -2,8 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart'; 
-import '../../utils/string_extensions.dart'; 
-
 class UserRoleManagementPage extends StatefulWidget {
   const UserRoleManagementPage({super.key});
 
@@ -74,7 +72,7 @@ class _UserRoleManagementPageState extends State<UserRoleManagementPage> {
                             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 5),
-                          Text('Rol: ${rol.capitalizeFirst()}'),
+                          Text('Rol: ${rol}'),
                         ],
                       ),
                       ElevatedButton(
@@ -105,9 +103,8 @@ class _UserRoleManagementPageState extends State<UserRoleManagementPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        // Usamos capitalizeFirst aquí
-        title: Text('Cambiar Rol a ${newRole.capitalizeFirst()}'),
-        content: Text('¿Estás seguro de que quieres cambiar el rol de este usuario a "${newRole.capitalizeFirst()}"?'),
+        title: Text('Cambiar Rol a ${newRole}'),
+        content: Text('¿Estás seguro de que quieres cambiar el rol de este usuario a "${newRole}"?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
           ElevatedButton(
@@ -122,7 +119,7 @@ class _UserRoleManagementPageState extends State<UserRoleManagementPage> {
       try {
         await _firestore.collection('usuarios').doc(userId).update({'rol': newRole});
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Rol de usuario actualizado a ${newRole.capitalizeFirst()}.')),
+          SnackBar(content: Text('Rol de usuario actualizado a ${newRole}.')),
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(

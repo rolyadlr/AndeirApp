@@ -1,18 +1,17 @@
-import 'package:andeir_app/utils/string_extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:intl/intl.dart'; // Necesario para formatear fechas si lo deseas, o simplemente para depuración
+import 'package:intl/intl.dart';
 
-// Importa la página de detalles de la tarea para la navegación
-import 'worker_task_detail_page.dart'; // Asegúrate que esta ruta es correcta
+// Importa la página de detalles de la tarea
+import 'worker_task_detail_page.dart'; // Asegúrate de que esta ruta es correcta
 
 // Extensión para capitalizar la primera letra de un String
-extension CalendarStringExtension on String { // Renombrado
-  String capitalize() {
+extension StringCasingExtension on String {
+  String capitalizeFirst() {
     if (isEmpty) return this;
-    return "${this[0].toUpperCase()}${substring(1)}";
+    return "${this[0].toUpperCase()}${substring(1).toLowerCase()}";
   }
 }
 
@@ -41,6 +40,7 @@ class _CalendarPageState extends State<CalendarPage> {
     super.initState();
     _currentUserId = FirebaseAuth.instance.currentUser?.uid;
     _selectedDay = _focusedDay; // Inicialmente selecciona el día actual
+
     if (_currentUserId != null) {
       // Carga las tareas para el mes inicial
       _getEventsForRange(_focusedDay);
@@ -48,82 +48,91 @@ class _CalendarPageState extends State<CalendarPage> {
       // Si no hay usuario, mostrar mensaje o redirigir
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error: No hay usuario autenticado. Por favor, inicia sesión.')),
+          const SnackBar(
+              content: Text(
+                  'Error: No hay usuario autenticado. Por favor, inicia sesión.')),
         );
       });
     }
   }
 
-  // Método para obtener las tareas de Firestore para un rango de fechas dado (generalmente un mes)
-Future<void> _getEventsForRange(DateTime month) async {
-  if (_currentUserId == null) {
-    print('DEBUG: _currentUserId es nulo. No se pueden cargar tareas.');
-    return;
-  }
+  /// Método para obtener las tareas de Firestore para un rango de fechas dado (generalmente un mes)
+  /// Las fechas se normalizan a UTC para asegurar consistencia con TableCalendar.
+  Future<void> _getEventsForRange(DateTime month) async {
+    if (_currentUserId == null) {
+      debugPrint('DEBUG: _currentUserId es nulo. No se pueden cargar tareas.');
+      return;
+    }
 
-  final startOfMonth = DateTime.utc(month.year, month.month, 1);
-  final endOfMonth = DateTime.utc(month.year, month.month + 1, 0, 23, 59, 59);
+    final startOfMonth = DateTime.utc(month.year, month.month, 1);
+    final endOfMonth = DateTime.utc(month.year, month.month + 1, 0, 23, 59, 59);
 
-  print('DEBUG: Cargando tareas para el usuario $_currentUserId desde $startOfMonth hasta $endOfMonth');
+    debugPrint(
+        'DEBUG: Cargando tareas para el usuario $_currentUserId desde $startOfMonth hasta $endOfMonth');
 
-  try {
-    final querySnapshot = await FirebaseFirestore.instance
-        .collection('tareas_asignadas')
-        .where('usuario_asignado', isEqualTo: _currentUserId)
-        .where('fecha', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
-        .where('fecha', isLessThanOrEqualTo: Timestamp.fromDate(endOfMonth))
-        .get();
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('tareas_asignadas')
+          .where('usuario_asignado', isEqualTo: _currentUserId)
+          .where('fecha', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+          .where('fecha', isLessThanOrEqualTo: Timestamp.fromDate(endOfMonth))
+          .get();
 
-    print('DEBUG: Se encontraron ${querySnapshot.docs.length} documentos.');
+      debugPrint('DEBUG: Se encontraron ${querySnapshot.docs.length} documentos.');
 
-    final Map<DateTime, List<DocumentSnapshot>> newEvents = {};
-    for (var doc in querySnapshot.docs) {
-      final data = doc.data() as Map<String, dynamic>;
-      final timestamp = data['fecha'] as Timestamp?;
+      final Map<DateTime, List<DocumentSnapshot>> newEvents = {};
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final timestamp = data['fecha'] as Timestamp?;
 
-      if (timestamp != null) {
-        final date = timestamp.toDate();
-        final normalizedDate = DateTime.utc(date.year, date.month, date.day);
+        if (timestamp != null) {
+          final date = timestamp.toDate();
+          // Normalizamos la fecha a UTC para que TableCalendar la interprete correctamente
+          final normalizedDate = DateTime.utc(date.year, date.month, date.day);
 
-        // Debugging the date and event data
-        print('  DEBUG: Tarea: ${data['actividad']}, Fecha: $normalizedDate, Estado: ${data['ubicacion']?['estado']}');
+          debugPrint(
+              '  DEBUG: Tarea: ${data['actividad']}, Fecha: $normalizedDate, Estado: ${data['ubicacion']?['estado']}');
 
-        if (newEvents[normalizedDate] == null) {
-          newEvents[normalizedDate] = [];
+          if (newEvents[normalizedDate] == null) {
+            newEvents[normalizedDate] = [];
+          }
+          newEvents[normalizedDate]!.add(doc);
+        } else {
+          debugPrint('  DEBUG: Documento sin timestamp de fecha: ${doc.id}');
         }
-        newEvents[normalizedDate]!.add(doc);
-      } else {
-        print('  DEBUG: Documento sin timestamp de fecha: ${doc.id}');
+      }
+
+      if (mounted) {
+        setState(() {
+          _events.clear();
+          _events.addAll(newEvents);
+          // Asegúrate de que _selectedDay no sea nulo al llamar a _getEventsForDay
+          _selectedEvents = _getEventsForDay(_selectedDay ?? _focusedDay);
+          debugPrint('DEBUG: _events ahora tiene ${_events.length} entradas.');
+          debugPrint(
+              'DEBUG: _selectedEvents para el día seleccionado tiene ${_selectedEvents.length} elementos.');
+        });
+      }
+    } catch (e) {
+      debugPrint('ERROR: Error al cargar tareas: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al cargar tareas: $e')),
+        );
       }
     }
-
-    setState(() {
-      _events.clear();
-      _events.addAll(newEvents);
-      _selectedEvents = _getEventsForDay(_selectedDay ?? _focusedDay);
-      print('DEBUG: _events ahora tiene ${_events.length} entradas.');
-      print('DEBUG: _selectedEvents para el día seleccionado tiene ${_selectedEvents.length} elementos.');
-    });
-  } catch (e) {
-    print('ERROR: Error al cargar tareas: $e');
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al cargar tareas: $e')),
-      );
-    }
   }
-}
 
-  // Método auxiliar para obtener la lista de eventos para un día específico
+  /// Método auxiliar para obtener la lista de eventos para un día específico.
+  /// Normaliza el día de entrada para que coincida con las claves del mapa _events.
   List<DocumentSnapshot> _getEventsForDay(DateTime day) {
-    // Normaliza el día de entrada para que coincida con las claves del mapa _events
     final normalizedDay = DateTime.utc(day.year, day.month, day.day);
     return _events[normalizedDay] ?? [];
   }
 
-  // Constructor para el marcador de eventos en el calendario
+  /// Constructor para el marcador de eventos en el calendario.
+  /// La lógica determina el color del marcador basado en los estados de las tareas del día.
   Widget _buildEventsMarker(DateTime date, List events) {
-    // Lógica para determinar el color del marcador basado en los estados de las tareas
     bool hasPending = false;
     bool hasInProgress = false;
     bool hasCompleted = false;
@@ -131,15 +140,12 @@ Future<void> _getEventsForRange(DateTime month) async {
 
     for (var event in events) {
       final data = (event as DocumentSnapshot).data() as Map<String, dynamic>;
-      // Accede al estado y conviértelo a minúsculas para la comparación
       final estado = (data['ubicacion']?['estado'] as String? ?? '').toLowerCase();
 
-      print('  DEBUG: Marcador para $date, Evento ID: ${event.id}, Estado: $estado'); // Debugging for each event
+      debugPrint('  DEBUG: Marcador para $date, Evento ID: ${event.id}, Estado: $estado');
 
       if (estado == 'pendiente') {
         hasPending = true;
-        // No break aquí si quieres que un día con múltiples tareas de diferentes estados
-        // tenga el color de la tarea más "crítica" (ej. pendiente)
       } else if (estado == 'en progreso') {
         hasInProgress = true;
       } else if (estado == 'completada') {
@@ -149,42 +155,30 @@ Future<void> _getEventsForRange(DateTime month) async {
       }
     }
 
-    Color markerColor = Colors.grey; // Default color if no specific state matched
+    Color markerColor = Colors.grey; // Color por defecto
 
-    // Prioridad de colores: Pendiente > En Progreso > Cancelada > Completada
+    // Prioridad de colores: Pendiente (rojo) > En Progreso (naranja) > Cancelada (gris oscuro) > Completada (verde)
     if (hasPending) {
       markerColor = Colors.red;
     } else if (hasInProgress) {
       markerColor = Colors.orange;
-    } else if (hasCancelled) { // Podrías poner cancelada antes de completada o viceversa
+    } else if (hasCancelled) {
       markerColor = Colors.black45;
     } else if (hasCompleted) {
       markerColor = Colors.green;
     }
 
-    print('  DEBUG: Marcador para $date, Color final: $markerColor'); // Debugging final color
+    debugPrint('  DEBUG: Marcador para $date, Color final: $markerColor');
 
     return Container(
       decoration: BoxDecoration(
         color: markerColor,
         shape: BoxShape.circle,
       ),
-      width: 8.0, // Puedes aumentar esto temporalmente para verlos mejor, ej. 15.0
-      height: 8.0, // Puedes aumentar esto temporalmente para verlos mejor, ej. 15.0
+      width: 8.0,
+      height: 8.0,
       margin: const EdgeInsets.symmetric(horizontal: 1.5),
     );
-  }
-
-  // Función auxiliar para formatear la fecha a un formato legible
-  String _formatFecha(Timestamp timestamp) {
-    final date = timestamp.toDate();
-    return DateFormat('dd/MM/yyyy').format(date);
-  }
-
-  // Función auxiliar para formatear la hora si la tienes como un String
-  // Si la hora también viene de un Timestamp, necesitarías ajustar esto.
-  String _formatHora(String? hora) {
-    return hora ?? 'N/A';
   }
 
   @override
@@ -198,7 +192,7 @@ Future<void> _getEventsForRange(DateTime month) async {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Calendario de Tareas', // Cambiado el título para ser más descriptivo
+                'Calendario de Tareas',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -215,36 +209,43 @@ Future<void> _getEventsForRange(DateTime month) async {
                   return isSameDay(_selectedDay, day);
                 },
                 onDaySelected: (selectedDay, focusedDay) {
-                  setState(() {
-                    _selectedDay = selectedDay;
-                    _focusedDay = focusedDay;
-                    _selectedEvents = _getEventsForDay(selectedDay); // Actualiza eventos del día
-                  });
+                  if (!isSameDay(_selectedDay, selectedDay)) {
+                    setState(() {
+                      _selectedDay = selectedDay;
+                      _focusedDay = focusedDay;
+                      _selectedEvents =
+                          _getEventsForDay(selectedDay); // Actualiza eventos del día
+                    });
+                  }
                 },
                 onPageChanged: (focusedDay) {
                   // Cuando el usuario cambia de mes, actualiza _focusedDay y carga nuevas tareas
-                  _focusedDay = focusedDay;
-                  _getEventsForRange(focusedDay);
+                  if (!isSameDay(_focusedDay, focusedDay)) {
+                    setState(() {
+                      _focusedDay = focusedDay;
+                    });
+                    _getEventsForRange(focusedDay);
+                  }
                 },
-                  eventLoader: (day) {
-                      final events = _getEventsForDay(day);
-                      // print('DEBUG: eventLoader para $day retorna ${events.length} eventos.'); // Otra print útil
-                      return events;
-                    },
-                    calendarBuilders: CalendarBuilders(
-                      markerBuilder: (context, date, events) {
-                        if (events.isNotEmpty) {
-                          // print('DEBUG: markerBuilder llamado para $date con ${events.length} eventos.'); // Confirma que se llama
-                          return Positioned(
-                            right: 1,
-                            bottom: 1,
-                            child: _buildEventsMarker(date, events),
-                          );
-                        }
-                        // print('DEBUG: markerBuilder: No hay eventos para $date.'); // Si no hay eventos
-                        return null;
-                      },
-                    ),
+                eventLoader: (day) {
+                  final events = _getEventsForDay(day);
+                  // debugPrint('DEBUG: eventLoader para $day retorna ${events.length} eventos.');
+                  return events;
+                },
+                calendarBuilders: CalendarBuilders(
+                  markerBuilder: (context, date, events) {
+                    if (events.isNotEmpty) {
+                      // debugPrint('DEBUG: markerBuilder llamado para $date con ${events.length} eventos.');
+                      return Positioned(
+                        right: 1,
+                        bottom: 1,
+                        child: _buildEventsMarker(date, events),
+                      );
+                    }
+                    // debugPrint('DEBUG: markerBuilder: No hay eventos para $date.');
+                    return null;
+                  },
+                ),
                 calendarStyle: const CalendarStyle(
                   todayDecoration: BoxDecoration(
                     color: Color(0xFF002F6C), // Azul de tu empresa para el día actual
@@ -254,11 +255,11 @@ Future<void> _getEventsForRange(DateTime month) async {
                     color: Color(0xFF3F51B5), // Otro tono de azul o morado para el día seleccionado
                     shape: BoxShape.circle,
                   ),
+                  // markerDecoration es un fallback, _buildEventsMarker lo sobrescribe
                   markerDecoration: BoxDecoration(
-                    color: Colors.red, // Este es un fallback, el _buildEventsMarker lo sobrescribe
+                    color: Colors.red,
                     shape: BoxShape.circle,
                   ),
-                  // Estilos para los textos de los días
                   weekendTextStyle: TextStyle(color: Colors.black87),
                   outsideDaysVisible: false, // Oculta días de meses anteriores/siguientes
                 ),
@@ -270,8 +271,10 @@ Future<void> _getEventsForRange(DateTime month) async {
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF002F6C), // Color de tu empresa
                   ),
-                  leftChevronIcon: Icon(Icons.chevron_left, color: Color(0xFF002F6C), size: 30),
-                  rightChevronIcon: Icon(Icons.chevron_right, color: Color(0xFF002F6C), size: 30),
+                  leftChevronIcon:
+                      Icon(Icons.chevron_left, color: Color(0xFF002F6C), size: 30),
+                  rightChevronIcon:
+                      Icon(Icons.chevron_right, color: Color(0xFF002F6C), size: 30),
                 ),
                 daysOfWeekStyle: const DaysOfWeekStyle(
                   weekdayStyle: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
@@ -289,7 +292,7 @@ Future<void> _getEventsForRange(DateTime month) async {
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF002F6C),
                 ),
-              ),  
+              ),
               const SizedBox(height: 12),
               // Lista de Tareas para el día seleccionado
               Expanded(
@@ -309,15 +312,22 @@ Future<void> _getEventsForRange(DateTime month) async {
                           final taskData = taskDoc.data() as Map<String, dynamic>;
 
                           // Extrae los datos con valores por defecto si son nulos
-                          final actividad = taskData['actividad'] ?? 'Actividad no especificada';
+                          final actividad =
+                              taskData['actividad'] ?? 'Actividad no especificada';
                           final timestampFecha = taskData['fecha'] as Timestamp?;
-                          final fechaDisplay = timestampFecha != null ? _formatFecha(timestampFecha) : 'Fecha N/A';
-                          final estado = (taskData['ubicacion']?['estado'] as String? ?? 'desconocido').capitalizeFirst();
-                          final horaDisplay = timestampFecha != null ? DateFormat('HH:mm').format(timestampFecha.toDate()) : 'Hora N/A';
-
+                          final fechaDisplay = timestampFecha != null
+                              ? DateFormat('dd/MM/yyyy').format(timestampFecha.toDate())
+                              : 'Fecha N/A';
+                          final estado = (taskData['ubicacion']?['estado'] as String? ?? 'desconocido')
+                              .capitalizeFirst();
+                          final horaDisplay = timestampFecha != null
+                              ? DateFormat('HH:mm').format(timestampFecha.toDate())
+                              : 'Hora N/A';
 
                           Color statusColor;
-                          switch (estado.toLowerCase()) { 
+                          bool isEditable = true; // Nueva variable para controlar la editabilidad
+
+                          switch (estado.toLowerCase()) {
                             case 'pendiente':
                               statusColor = Colors.red;
                               break;
@@ -326,12 +336,15 @@ Future<void> _getEventsForRange(DateTime month) async {
                               break;
                             case 'completada':
                               statusColor = Colors.green;
+                              isEditable = false; // No editable si está completada
                               break;
                             case 'cancelada':
                               statusColor = Colors.black45;
+                              isEditable = false; // No editable si está cancelada
                               break;
                             default:
                               statusColor = Colors.blue; // Color por defecto
+                              break;
                           }
 
                           return Card(
@@ -339,15 +352,25 @@ Future<void> _getEventsForRange(DateTime month) async {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             elevation: 3,
                             child: InkWell(
-                              onTap: () {
-                                // Navega a la página de detalles de la tarea
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => WorkerTaskDetailPage(taskDocument: taskDoc),
-                                  ),
-                                );
-                              },
+                              // Deshabilita el onTap si la tarea no es editable
+                              onTap: isEditable
+                                  ? () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              WorkerTaskDetailPage(taskDocument: taskDoc),
+                                        ),
+                                      ).then((_) {
+                                        // Recarga las tareas cuando se regresa de la página de detalles
+                                        _getEventsForRange(_focusedDay);
+                                        // Vuelve a cargar los eventos para el día seleccionado por si el estado cambió
+                                        setState(() {
+                                          _selectedEvents = _getEventsForDay(_selectedDay!);
+                                        });
+                                      });
+                                    }
+                                  : null, // Si no es editable, onTap es null
                               child: Padding(
                                 padding: const EdgeInsets.all(12.0),
                                 child: Row(
@@ -355,7 +378,7 @@ Future<void> _getEventsForRange(DateTime month) async {
                                     // Indicador de color del estado
                                     Container(
                                       width: 8,
-                                      height: 60, // Ajusta la altura según tus necesidades
+                                      height: 60,
                                       decoration: BoxDecoration(
                                         color: statusColor,
                                         borderRadius: BorderRadius.circular(4),
@@ -372,17 +395,31 @@ Future<void> _getEventsForRange(DateTime month) async {
                                               fontWeight: FontWeight.bold,
                                               fontSize: 16,
                                               color: statusColor,
+                                              decoration: !isEditable
+                                                  ? TextDecoration.lineThrough
+                                                  : null, // Tachado si no es editable
                                             ),
                                           ),
                                           const SizedBox(height: 4),
-                                          Text('Estado: $estado', style: TextStyle(fontSize: 14, color: Colors.grey[700])),
-                                          Text('Fecha: $fechaDisplay', style: TextStyle(fontSize: 14, color: Colors.grey[700])),
-                                          Text('Hora: $horaDisplay', style: TextStyle(fontSize: 14, color: Colors.grey[700])),
-                                          // Puedes añadir más detalles como dirección si la tienes en la tarea
+                                          Text('Estado: $estado',
+                                              style:
+                                                  TextStyle(fontSize: 14, color: Colors.grey[700])),
+                                          Text('Fecha: $fechaDisplay',
+                                              style:
+                                                  TextStyle(fontSize: 14, color: Colors.grey[700])),
+                                          Text('Hora: $horaDisplay',
+                                              style:
+                                                  TextStyle(fontSize: 14, color: Colors.grey[700])),
                                         ],
                                       ),
                                     ),
-                                    const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 18),
+                                    // Muestra el icono de flecha solo si es editable
+                                    if (isEditable)
+                                      const Icon(Icons.arrow_forward_ios,
+                                          color: Colors.grey, size: 18),
+                                    // Opcional: Podrías mostrar un icono diferente si no es editable, por ejemplo:
+                                    // else
+                                    //   const Icon(Icons.lock, color: Colors.grey, size: 18),
                                   ],
                                 ),
                               ),

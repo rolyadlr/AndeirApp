@@ -15,19 +15,19 @@ class _StartNewConversationPageState extends State<StartNewConversationPage> {
   final ChatService _chatService = ChatService();
   final User? currentUser = FirebaseAuth.instance.currentUser;
 
-@override
-Widget build(BuildContext context) {
-  if (currentUser == null) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Iniciar Nueva Conversación'),
-        backgroundColor: const Color(0xFF002F6C),
-      ),
-      body: const Center(
-        child: Text('Debes iniciar sesión para iniciar una conversación.'),
-      ),
-    );
-  }
+  @override
+  Widget build(BuildContext context) {
+    if (currentUser == null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Iniciar Nueva Conversación'),
+          backgroundColor: const Color(0xFF002F6C),
+        ),
+        body: const Center(
+          child: Text('Debes iniciar sesión para iniciar una conversación.'),
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -46,7 +46,7 @@ Widget build(BuildContext context) {
           }
 
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('No hay usuarios disponibles.'));
+            return const Center(child: Text('No hay usuarios disponibles para chatear.'));
           }
 
           final users = snapshot.data!;
@@ -55,28 +55,38 @@ Widget build(BuildContext context) {
             itemCount: users.length,
             itemBuilder: (context, index) {
               final user = users[index];
-              // No mostrar al usuario actual en la lista para chatear consigo mismo
+              // _chatService.getUsersStream() ya filtra al usuario actual,
+              // pero esta verificación es una doble seguridad.
               if (user['uid'] == currentUser!.uid) {
                 return const SizedBox.shrink();
               }
-              return ListTile(
-                leading: const CircleAvatar(
-                  child: Icon(Icons.person),
-                ),
-                title: Text('${user['nombres']} ${user['apellidos']}'),
-                subtitle: Text(user['rol'] ?? 'Sin rol'), // Muestra el rol
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ChatPage(
-                        otherUserId: user['uid'],
-                        otherUserName: '${user['nombres']} ${user['apellidos']}',
-                        // No pasamos chatRoomId aquí, ChatPage lo generará si es una nueva conversación
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                elevation: 2,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                    child: Icon(Icons.person, color: Theme.of(context).primaryColor),
+                  ),
+                  title: Text(
+                    '${user['nombres'] ?? ''} ${user['apellidos'] ?? ''}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(user['rol']?? 'Sin rol'),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ChatPage(
+                          otherUserId: user['uid'],
+                          otherUserName: '${user['nombres'] ?? ''} ${user['apellidos'] ?? ''}',
+                          // No pasamos chatRoomId aquí, ChatPage lo generará si es una nueva conversación
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               );
             },
           );
