@@ -12,19 +12,28 @@ class ViewTaskReportPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Map<String, dynamic> taskData = taskDocument.data() as Map<String, dynamic>;
+    final Map<String, dynamic> taskData =
+        taskDocument.data() as Map<String, dynamic>;
 
     // Obtener los detalles del reporte
-    final String actividad = taskData['actividad'] ?? 'Actividad no especificada';
+    final String actividad =
+        taskData['actividad'] ?? 'Actividad no especificada';
     // CORRECTED: Use 'observaciones_trabajador' instead of 'reporte_descripcion'
-    final String reporteDescripcion = taskData['observaciones_trabajador'] ?? 'No se proporcionó descripción del reporte.';
+    final String reporteDescripcion =
+        taskData['observaciones_trabajador'] ??
+        'No se proporcionó descripción del reporte.';
     // CORRECTED: Use 'fotos_evidencia' instead of 'imagenes_reporte'
-    final List<String> imagenesReporte = List<String>.from(taskData['fotos_evidencia'] ?? []);
+    final List<String> imagenesReporte = List<String>.from(
+      taskData['fotos_evidencia'] ?? [],
+    );
     final String estado = taskData['ubicacion']?['estado'] ?? 'pendiente';
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Detalles de la Entrega de Tarea', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Detalles de la Entrega de Tarea',
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: azulIndigo,
         foregroundColor: Colors.white,
       ),
@@ -35,7 +44,11 @@ class ViewTaskReportPage extends StatelessWidget {
           children: [
             Text(
               'Tarea: $actividad',
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF002F6C)),
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF002F6C),
+              ),
             ),
             const SizedBox(height: 10),
             Text(
@@ -49,7 +62,11 @@ class ViewTaskReportPage extends StatelessWidget {
             const Divider(height: 30, thickness: 1),
             const Text(
               'Reporte del Trabajador:',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
             ),
             const SizedBox(height: 10),
             Container(
@@ -67,13 +84,20 @@ class ViewTaskReportPage extends StatelessWidget {
             const SizedBox(height: 20),
             const Text(
               'Imágenes Adjuntas:',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
             ),
             const SizedBox(height: 10),
             if (imagenesReporte.isEmpty)
               const Text(
                 'No se adjuntaron imágenes.',
-                style: TextStyle(fontStyle: FontStyle.italic, color: Colors.black45),
+                style: TextStyle(
+                  fontStyle: FontStyle.italic,
+                  color: Colors.black45,
+                ),
               )
             else
               GridView.builder(
@@ -93,16 +117,17 @@ class ViewTaskReportPage extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => Scaffold(
-                            appBar: AppBar(
-                              backgroundColor: Colors.black,
-                              iconTheme: const IconThemeData(color: Colors.white),
-                            ),
-                            backgroundColor: Colors.black,
-                            body: Center(
-                              child: Image.network(imageUrl),
-                            ),
-                          ),
+                          builder:
+                              (context) => Scaffold(
+                                appBar: AppBar(
+                                  backgroundColor: Colors.black,
+                                  iconTheme: const IconThemeData(
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                backgroundColor: Colors.black,
+                                body: Center(child: Image.network(imageUrl)),
+                              ),
                         ),
                       );
                     },
@@ -115,16 +140,22 @@ class ViewTaskReportPage extends StatelessWidget {
                           if (loadingProgress == null) return child;
                           return Center(
                             child: CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                  : null,
+                              value:
+                                  loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                          loadingProgress.expectedTotalBytes!
+                                      : null,
                             ),
                           );
                         },
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
                             color: Colors.grey[200],
-                            child: const Icon(Icons.broken_image, color: Colors.grey, size: 50),
+                            child: const Icon(
+                              Icons.broken_image,
+                              color: Colors.grey,
+                              size: 50,
+                            ),
                           );
                         },
                       ),

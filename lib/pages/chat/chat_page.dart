@@ -1,16 +1,14 @@
-// lib/pages/chat/chat_page.dart
-import 'dart:io'; // Para File
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:image_picker/image_picker.dart'; // Nuevo: Para seleccionar imágenes
-import 'package:cached_network_image/cached_network_image.dart'; // Nuevo: Para mostrar imágenes
-import 'package:intl/intl.dart'; // Para formatear la hora
+import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:intl/intl.dart';
 
 import '../../services/chat_service.dart';
 import '../../models/message.dart';
 
-// --- Nuevo: Provider para el estado de escritura ---
 class TypingStatusProvider with ChangeNotifier {
   bool _isTyping = false;
   String? _otherUserTypingId;
@@ -26,12 +24,11 @@ class TypingStatusProvider with ChangeNotifier {
     }
   }
 }
-// --- Fin del Provider ---
 
 class ChatPage extends StatefulWidget {
   final String otherUserId;
   final String otherUserName;
-  final String? chatRoomId; // Ahora el chatRoomId puede ser nulo inicialmente
+  final String? chatRoomId;
 
   const ChatPage({
     super.key,
@@ -49,19 +46,18 @@ class _ChatPageState extends State<ChatPage> {
   final ScrollController _scrollController = ScrollController();
   final ChatService _chatService = ChatService();
   final User? currentUser = FirebaseAuth.instance.currentUser;
-  final ImagePicker _picker = ImagePicker(); // Instancia de ImagePicker
+  final ImagePicker _picker = ImagePicker();
 
   late String _actualChatRoomId;
   bool _isLoadingChatRoom = true;
-  Stream<Map<String, dynamic>>? _typingStatusStream; // Stream para el estado de escritura
+  Stream<Map<String, dynamic>>? _typingStatusStream;
   bool _isOtherUserTyping = false;
 
   @override
   void initState() {
     super.initState();
     _initializeChatRoom();
-
-    _messageController.addListener(_onMessageChanged); // Escuchar cambios en el input
+    _messageController.addListener(_onMessageChanged);
   }
 
   @override
@@ -69,20 +65,24 @@ class _ChatPageState extends State<ChatPage> {
     _messageController.removeListener(_onMessageChanged);
     _messageController.dispose();
     _scrollController.dispose();
-    // Es importante establecer el estado de escritura a falso al salir del chat
     if (currentUser != null && !_isLoadingChatRoom) {
-      _chatService.updateTypingStatus(_actualChatRoomId, currentUser!.uid, false);
+      _chatService.updateTypingStatus(
+        _actualChatRoomId,
+        currentUser!.uid,
+        false,
+      );
     }
     super.dispose();
   }
 
-  /// Inicializa el ID del chat room y configura el stream de estado de escritura.
   Future<void> _initializeChatRoom() async {
     if (currentUser == null) {
       if (mounted) {
-        Navigator.pop(context); // Regresa si no hay usuario autenticado
+        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Debes iniciar sesión para acceder al chat.')),
+          const SnackBar(
+            content: Text('Debes iniciar sesión para acceder al chat.'),
+          ),
         );
       }
       return;
@@ -100,20 +100,20 @@ class _ChatPageState extends State<ChatPage> {
     setState(() {
       _actualChatRoomId = generatedChatRoomId;
       _isLoadingChatRoom = false;
-      _typingStatusStream = _chatService.getTypingStatusStream(_actualChatRoomId); // Iniciar stream
+      _typingStatusStream = _chatService.getTypingStatusStream(
+        _actualChatRoomId,
+      );
     });
 
     _typingStatusStream?.listen((typingUsers) {
       if (mounted) {
         setState(() {
-          // Si el otro usuario está en typingUsers y su valor es true
           _isOtherUserTyping = typingUsers[widget.otherUserId] == true;
         });
       }
     });
   }
 
-  /// Envía un mensaje de texto.
   void _sendMessage() async {
     if (currentUser == null) return;
     final text = _messageController.text.trim();
@@ -127,10 +127,12 @@ class _ChatPageState extends State<ChatPage> {
       );
       _messageController.clear();
       _scrollToBottom();
-      // Al enviar un mensaje, el usuario ya no está escribiendo
-      _chatService.updateTypingStatus(_actualChatRoomId, currentUser!.uid, false);
+      _chatService.updateTypingStatus(
+        _actualChatRoomId,
+        currentUser!.uid,
+        false,
+      );
     } catch (e) {
-      print('Error al enviar mensaje: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al enviar mensaje: ${e.toString()}')),
@@ -139,11 +141,12 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  /// Envía un mensaje de imagen.
   Future<void> _sendImage() async {
     if (currentUser == null) return;
 
-    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    final XFile? pickedFile = await _picker.pickImage(
+      source: ImageSource.gallery,
+    );
     if (pickedFile == null) return;
 
     final File imageFile = File(pickedFile.path);
@@ -156,7 +159,6 @@ class _ChatPageState extends State<ChatPage> {
       );
       _scrollToBottom();
     } catch (e) {
-      print('Error al enviar la imagen: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al enviar la imagen: ${e.toString()}')),
@@ -165,7 +167,6 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  /// Desplaza la lista de mensajes al final.
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -178,12 +179,14 @@ class _ChatPageState extends State<ChatPage> {
     });
   }
 
-  /// Maneja los cambios en el controlador del mensaje para el typing indicator.
   void _onMessageChanged() {
     if (currentUser == null || _isLoadingChatRoom) return;
-
     bool isCurrentlyTyping = _messageController.text.isNotEmpty;
-    _chatService.updateTypingStatus(_actualChatRoomId, currentUser!.uid, isCurrentlyTyping);
+    _chatService.updateTypingStatus(
+      _actualChatRoomId,
+      currentUser!.uid,
+      isCurrentlyTyping,
+    );
   }
 
   @override
@@ -191,91 +194,110 @@ class _ChatPageState extends State<ChatPage> {
     if (_isLoadingChatRoom) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Cargando chat...'),
+          title: const Text(
+            'Cargando chat...',
+            style: TextStyle(color: Colors.white),
+          ),
           backgroundColor: const Color(0xFF002F6C),
         ),
-        body: const Center(
-          child: CircularProgressIndicator(),
-        ),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: const Color(0xFF002F6C),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(widget.otherUserName),
-            if (_isOtherUserTyping) // Mostrar "Escribiendo..." si el otro usuario está escribiendo
-              Text(
+            Text(
+              widget.otherUserName,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            if (_isOtherUserTyping)
+              const Text(
                 'Escribiendo...',
                 style: TextStyle(fontSize: 14, color: Colors.white70),
               ),
           ],
         ),
-        backgroundColor: const Color(0xFF002F6C),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Column(
         children: [
           Expanded(
             child: StreamBuilder<List<Message>>(
-              stream: _chatService.getMessages(currentUser!.uid, widget.otherUserId),
+              stream: _chatService.getMessages(
+                currentUser!.uid,
+                widget.otherUserId,
+              ),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
-
                 if (snapshot.hasError) {
-                  return Center(child: Text('Error al cargar mensajes: ${snapshot.error}'));
+                  return Center(
+                    child: Text('Error al cargar mensajes: ${snapshot.error}'),
+                  );
                 }
-
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text('Di algo para empezar la conversación.'));
+                  return const Center(
+                    child: Text('Di algo para empezar la conversación.'),
+                  );
                 }
 
                 final messages = snapshot.data!;
-                _scrollToBottom(); // Asegura que se desplaza al último mensaje al cargar
+                _scrollToBottom();
 
                 return ListView.builder(
                   controller: _scrollController,
                   itemCount: messages.length,
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 10.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8.0,
+                    vertical: 10.0,
+                  ),
                   itemBuilder: (context, index) {
                     final msg = messages[index];
                     final isMe = msg.senderId == currentUser!.uid;
 
                     return Align(
-                      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                      alignment:
+                          isMe ? Alignment.centerRight : Alignment.centerLeft,
                       child: Container(
                         constraints: BoxConstraints(
-                            maxWidth: MediaQuery.of(context).size.width * 0.75), // Limita el ancho del mensaje
+                          maxWidth: MediaQuery.of(context).size.width * 0.75,
+                        ),
                         padding: const EdgeInsets.all(10),
-                        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                        margin: const EdgeInsets.symmetric(
+                          vertical: 4,
+                          horizontal: 8,
+                        ),
                         decoration: BoxDecoration(
-                          color: isMe ? const Color(0xFF002F6C) : Colors.grey[300], // Color de tu empresa para tus mensajes
+                          color:
+                              isMe ? const Color(0xFF002F6C) : Colors.grey[300],
                           borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 2,
-                              offset: const Offset(0, 1),
-                            ),
-                          ],
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (msg.type == MessageType.image && msg.imageUrl != null)
+                            if (msg.type == MessageType.image &&
+                                msg.imageUrl != null)
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 8.0),
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(8.0),
                                   child: CachedNetworkImage(
                                     imageUrl: msg.imageUrl!,
-                                    placeholder: (context, url) =>
-                                        const CircularProgressIndicator(),
-                                    errorWidget: (context, url, error) => const Icon(Icons.error),
-                                    height: 150, // Altura fija para las imágenes del chat
+                                    placeholder:
+                                        (context, url) =>
+                                            const CircularProgressIndicator(),
+                                    errorWidget:
+                                        (context, url, error) =>
+                                            const Icon(Icons.error),
+                                    height: 150,
                                     fit: BoxFit.cover,
                                   ),
                                 ),
@@ -283,13 +305,19 @@ class _ChatPageState extends State<ChatPage> {
                             Text(
                               msg.text,
                               style: TextStyle(
-                                  color: isMe ? Colors.white : Colors.black87, fontSize: 16),
+                                color: isMe ? Colors.white : Colors.black87,
+                                fontSize: 16,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              DateFormat('HH:mm').format(msg.timestamp.toDate()),
+                              DateFormat(
+                                'HH:mm',
+                              ).format(msg.timestamp.toDate()),
                               style: TextStyle(
-                                  fontSize: 10, color: isMe ? Colors.white70 : Colors.black54),
+                                fontSize: 10,
+                                color: isMe ? Colors.white70 : Colors.black54,
+                              ),
                             ),
                           ],
                         ),
@@ -311,36 +339,40 @@ class _ChatPageState extends State<ChatPage> {
                       hintText: 'Escribe un mensaje...',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(25.0),
-                        borderSide: BorderSide.none, // Elimina el borde por defecto
+                        borderSide: BorderSide.none,
                       ),
                       filled: true,
-                      fillColor: Colors.grey[200], // Fondo más suave
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+                      fillColor: Colors.grey[200],
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20.0,
+                        vertical: 10.0,
+                      ),
                     ),
-                    onTap: () => _scrollToBottom(), // Desplazar al tocar el TextField
+                    onTap: _scrollToBottom,
                   ),
                 ),
                 const SizedBox(width: 8),
-                // Botón para seleccionar imagen
                 IconButton(
-                  icon: const Icon(Icons.image, color: Color(0xFF002F6C), size: 28),
+                  icon: const Icon(
+                    Icons.image,
+                    color: Color(0xFF002F6C),
+                    size: 28,
+                  ),
                   onPressed: _sendImage,
                   tooltip: 'Enviar imagen',
                 ),
                 const SizedBox(width: 8),
-                // Botón de enviar
                 CircleAvatar(
-                  backgroundColor: const Color(0xFF002F6C), // Color de tu empresa
+                  backgroundColor: const Color(0xFF002F6C),
                   radius: 24,
                   child: IconButton(
                     icon: const Icon(Icons.send, color: Colors.white),
                     onPressed: _sendMessage,
-                    tooltip: 'Enviar mensaje',
                   ),
                 ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );
