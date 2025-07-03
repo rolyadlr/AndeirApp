@@ -20,7 +20,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int _currentIndex = 0; // Índice de la pestaña seleccionada en la barra de navegación.
+  int _currentIndex =
+      0; // Índice de la pestaña seleccionada en la barra de navegación.
   String? _userName; // Almacena el nombre completo del usuario.
   String? _userUid; // Almacena el UID del usuario actual.
   bool _isLoading = true; // Indica si los datos del usuario están cargándose.
@@ -38,12 +39,20 @@ class _HomePageState extends State<HomePage> {
   /// Obtiene los datos del usuario autenticado (nombre y UID) desde Firebase.
   /// También inicializa la lista de páginas de navegación.
   Future<void> _fetchUserData() async {
-    _userUid = FirebaseAuth.instance.currentUser?.uid; // Obtener el UID del usuario actual.
+    _userUid =
+        FirebaseAuth
+            .instance
+            .currentUser
+            ?.uid; // Obtener el UID del usuario actual.
 
     if (_userUid != null) {
       try {
         // Consultar el documento del usuario en Firestore.
-        final doc = await FirebaseFirestore.instance.collection('usuarios').doc(_userUid).get();
+        final doc =
+            await FirebaseFirestore.instance
+                .collection('usuarios')
+                .doc(_userUid)
+                .get();
 
         if (doc.exists) {
           final data = doc.data();
@@ -89,14 +98,17 @@ class _HomePageState extends State<HomePage> {
       return Scaffold(
         appBar: AppBar(title: const Text('Error de Carga')),
         body: const Center(
-          child: Text('No se pudo cargar la información de las páginas. Intenta de nuevo más tarde.'),
+          child: Text(
+            'No se pudo cargar la información de las páginas. Intenta de nuevo más tarde.',
+          ),
         ),
       );
     }
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      body: _pages[_currentIndex], // Muestra la página correspondiente al índice actual.
+      body:
+          _pages[_currentIndex], // Muestra la página correspondiente al índice actual.
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         selectedItemColor: Colors.red.shade700,
@@ -116,9 +128,9 @@ class _HomePageState extends State<HomePage> {
             label: 'Inicio',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.assignment_outlined),
-            activeIcon: Icon(Icons.assignment),
-            label: 'Asignación',
+            icon: Icon(Icons.calendar_month),
+            activeIcon: Icon(Icons.calendar_month),
+            label: 'Calendario',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.message_outlined),
@@ -142,11 +154,12 @@ class _HomePageState extends State<HomePage> {
         padding: const EdgeInsets.all(20),
         child: StreamBuilder<QuerySnapshot>(
           // Escucha los cambios en la colección 'tareas_asignadas' para el usuario actual.
-          stream: FirebaseFirestore.instance
-              .collection('tareas_asignadas')
-              .where('usuario_asignado', isEqualTo: uid)
-              .orderBy('fecha', descending: true)
-              .snapshots(),
+          stream:
+              FirebaseFirestore.instance
+                  .collection('tareas_asignadas')
+                  .where('usuario_asignado', isEqualTo: uid)
+                  .orderBy('fecha', descending: true)
+                  .snapshots(),
           builder: (context, snapshot) {
             // Muestra un indicador de carga mientras se obtienen los datos.
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -168,7 +181,9 @@ class _HomePageState extends State<HomePage> {
 
             for (var tarea in tareas) {
               final data = tarea.data() as Map<String, dynamic>?;
-              final estado = data?['ubicacion']?['estado'] ?? 'pendiente'; // Valor por defecto
+              final estado =
+                  data?['ubicacion']?['estado'] ??
+                  'pendiente'; // Valor por defecto
               switch (estado) {
                 case 'pendiente':
                   pendientes.add(tarea);
@@ -205,7 +220,12 @@ class _HomePageState extends State<HomePage> {
                 ),
                 const SizedBox(height: 20),
                 // Muestra los contadores de tareas.
-                _buildTaskCounters(pendientes.length, enProgreso.length, completadas.length, canceladas.length),
+                _buildTaskCounters(
+                  pendientes.length,
+                  enProgreso.length,
+                  completadas.length,
+                  canceladas.length,
+                ),
                 const SizedBox(height: 20),
 
                 // Secciones de tareas por estado
@@ -242,22 +262,52 @@ class _HomePageState extends State<HomePage> {
   }
 
   /// Construye los contadores para los cuatro estados de tareas.
-  Widget _buildTaskCounters(int pendientes, int enProgreso, int completadas, int canceladas) {
+  /// Construye los contadores para los cuatro estados de tareas.
+  Widget _buildTaskCounters(
+    int pendientes,
+    int enProgreso,
+    int completadas,
+    int canceladas,
+  ) {
     return Column(
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildCounterBox('Pendientes', pendientes, Colors.red.shade700),
-            _buildCounterBox('En Progreso', enProgreso, Colors.orange.shade700),
+            Expanded(
+              child: _buildCounterBox(
+                'Pendientes',
+                pendientes,
+                Colors.red.shade700,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _buildCounterBox(
+                'En Progreso',
+                enProgreso,
+                Colors.orange.shade700,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 10),
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildCounterBox('Completadas', completadas, Colors.green.shade700),
-            _buildCounterBox('Canceladas', canceladas, Colors.grey.shade600),
+            Expanded(
+              child: _buildCounterBox(
+                'Completadas',
+                completadas,
+                Colors.green.shade700,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _buildCounterBox(
+                'Canceladas',
+                canceladas,
+                Colors.grey.shade600,
+              ),
+            ),
           ],
         ),
       ],
@@ -267,7 +317,6 @@ class _HomePageState extends State<HomePage> {
   /// Construye una caja individual para mostrar el conteo de tareas.
   Widget _buildCounterBox(String label, int count, Color color) {
     return Container(
-      width: MediaQuery.of(context).size.width * 0.45, // Ajusta el ancho para dos columnas
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
@@ -313,7 +362,10 @@ class _HomePageState extends State<HomePage> {
               padding: const EdgeInsets.symmetric(vertical: 10.0),
               child: Text(
                 emptyMessage,
-                style: TextStyle(color: Colors.grey[600], fontStyle: FontStyle.italic),
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontStyle: FontStyle.italic,
+                ),
               ),
             ),
           )
@@ -367,47 +419,56 @@ class _HomePageState extends State<HomePage> {
       margin: const EdgeInsets.symmetric(vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
-        leading: Icon(
-          iconData,
-          color: iconColor,
+        leading: Icon(iconData, color: iconColor),
+        title: Text(
+          actividad,
+          style: const TextStyle(fontWeight: FontWeight.w600),
         ),
-        title: Text(actividad, style: const TextStyle(fontWeight: FontWeight.w600)),
         subtitle: Text(
           'Fecha: ${DateFormat('dd/MM/yyyy').format(fecha)}\n'
           'Estado: ${estado.toString().capitalizeFirsthome()}', // Usar la extensión para capitalizar
         ),
-        trailing: isEditable
-            ? const Icon(Icons.arrow_forward_ios, size: 16)
-            : const Icon(Icons.visibility, size: 16), // Ícono de ojo para ver detalles
-        onTap: isEditable
-            ? () {
-                // Permite navegar y editar solo si la tarea es editable
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => WorkerTaskDetailPage(
-                      taskDocument: taskDocument,
-                      isEditable: true, // Se pasa true porque es editable
+        trailing:
+            isEditable
+                ? const Icon(Icons.arrow_forward_ios, size: 16)
+                : const Icon(
+                  Icons.visibility,
+                  size: 16,
+                ), // Ícono de ojo para ver detalles
+        onTap:
+            isEditable
+                ? () {
+                  // Permite navegar y editar solo si la tarea es editable
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) => WorkerTaskDetailPage(
+                            taskDocument: taskDocument,
+                            isEditable: true, // Se pasa true porque es editable
+                          ),
                     ),
-                  ),
-                );
-              }
-            : () {
-                // Solo permite ver los detalles si la tarea no es editable
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => WorkerTaskDetailPage(
-                      taskDocument: taskDocument,
-                      isEditable: false, // Se pasa false para deshabilitar edición
+                  );
+                }
+                : () {
+                  // Solo permite ver los detalles si la tarea no es editable
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) => WorkerTaskDetailPage(
+                            taskDocument: taskDocument,
+                            isEditable:
+                                false, // Se pasa false para deshabilitar edición
+                          ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
       ),
     );
   }
 }
+
 extension WorkerTaskStringExtension on String {
   String capitalizeFirsthome() {
     if (isEmpty) return this;

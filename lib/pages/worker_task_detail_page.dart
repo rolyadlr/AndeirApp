@@ -96,8 +96,11 @@ class _WorkerTaskDetailPageState extends State<WorkerTaskDetailPage> {
 
     _adminId =
         data['admin_asignador_id']; // Asumiendo que hay un campo para el ID del admin.
-    _currentEstado = data['ubicacion']?['estado'] ?? 'pendiente';
-
+    final rawEstado = (data['ubicacion']?['estado'] ?? 'pendiente') as String;
+    _currentEstado = _estados.firstWhere(
+      (e) => e.toLowerCase() == rawEstado.toLowerCase(),
+      orElse: () => _estados[0],
+    );
     if (data['ubicacion'] != null &&
         data['ubicacion']['lat'] != null &&
         data['ubicacion']['lng'] != null) {

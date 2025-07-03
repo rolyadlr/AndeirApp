@@ -1,12 +1,12 @@
-// lib/pages/conversation_list_page.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:intl/intl.dart'; 
+import 'package:intl/intl.dart';
+
 import '../../services/chat_service.dart';
 import 'chat/chat_page.dart';
-import 'chat/start_new_conversation_page.dart'; 
-import '../../models/message.dart'; 
+import 'chat/start_new_conversation_page.dart';
+import '../../models/message.dart';
 
 class ConversationListPage extends StatefulWidget {
   const ConversationListPage({super.key});
@@ -19,22 +19,35 @@ class _ConversationListPageState extends State<ConversationListPage> {
   final ChatService _chatService = ChatService();
   final User? currentUser = FirebaseAuth.instance.currentUser;
 
+  final azulIntenso = const Color(0xFF002F6C);
+  final rojoOscuro = const Color(0xFFB71C1C);
+
   @override
   Widget build(BuildContext context) {
     if (currentUser == null) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Mensajes'),
-          backgroundColor: const Color(0xFF002F6C),
+          backgroundColor: azulIntenso,
+          title: const Text(
+            'Mensajes',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          iconTheme: const IconThemeData(color: Colors.white),
         ),
-        body: const Center(child: Text('Debes iniciar sesión para ver tus mensajes.')),
+        body: const Center(
+          child: Text('Debes iniciar sesión para ver tus mensajes.'),
+        ),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tus Conversaciones'),
-        backgroundColor: const Color(0xFF002F6C),
+        backgroundColor: azulIntenso,
+        title: const Text(
+          'Mensajes',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: _chatService.getUserConversations(currentUser!.uid),
@@ -44,12 +57,17 @@ class _ConversationListPageState extends State<ConversationListPage> {
           }
 
           if (snapshot.hasError) {
-            print('Error en ConversationListPage: ${snapshot.error}'); // Debugging
-            return Center(child: Text('Error al cargar las conversaciones: ${snapshot.error}'));
+            return Center(
+              child: Text(
+                'Error al cargar las conversaciones: ${snapshot.error}',
+              ),
+            );
           }
 
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('No tienes conversaciones aún. ¡Inicia una!'));
+            return const Center(
+              child: Text('No tienes conversaciones aún. ¡Inicia una!'),
+            );
           }
 
           final conversations = snapshot.data!;
@@ -58,43 +76,81 @@ class _ConversationListPageState extends State<ConversationListPage> {
             itemCount: conversations.length,
             itemBuilder: (context, index) {
               final convo = conversations[index];
-              final lastMessageType = convo['lastMessageType'] as String? ?? 'text';
+              final lastMessageType =
+                  convo['lastMessageType'] as String? ?? 'text';
               final lastMessageText = convo['lastMessage'] as String? ?? '';
               String displayMessage;
 
-              // Determinar cómo mostrar el último mensaje
-              if (lastMessageType == MessageType.image.toString().split('.').last) {
-                displayMessage = '🖼️ Imagen';
+              if (lastMessageType ==
+                  MessageType.image.toString().split('.').last) {
+                displayMessage = '🖼️ Imagen enviada';
               } else {
                 displayMessage = lastMessageText;
               }
 
               return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                elevation: 2,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                elevation: 3,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                color: Colors.white,
                 child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   leading: CircleAvatar(
-                    backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
-                    child: Icon(Icons.person, color: Theme.of(context).primaryColor),
+                    radius: 24,
+                    backgroundColor: azulIntenso.withOpacity(0.1),
+                    child: Icon(Icons.person, color: azulIntenso),
                   ),
                   title: Text(
                     convo['otherUserName'] ?? 'Usuario Desconocido',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                      color: Colors.black87,
+                    ),
                   ),
-                  subtitle: Text(displayMessage),
-                  trailing: convo['timestamp'] != null
-                      ? Text(_formatTimestamp(convo['timestamp'] as Timestamp))
-                      : const Text(''),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      displayMessage,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                  trailing: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (convo['timestamp'] != null)
+                        Text(
+                          _formatTimestamp(convo['timestamp'] as Timestamp),
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                          ),
+                        ),
+                      const SizedBox(height: 4),
+                      const Icon(Icons.chevron_right, color: Colors.grey),
+                    ],
+                  ),
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => ChatPage(
-                          otherUserId: convo['otherUserId'],
-                          otherUserName: convo['otherUserName'] ?? 'Usuario',
-                          chatRoomId: convo['chatRoomId'],
-                        ),
+                        builder:
+                            (_) => ChatPage(
+                              otherUserId: convo['otherUserId'],
+                              otherUserName:
+                                  convo['otherUserName'] ?? 'Usuario',
+                              chatRoomId: convo['chatRoomId'],
+                            ),
                       ),
                     );
                   },
@@ -105,14 +161,12 @@ class _ConversationListPageState extends State<ConversationListPage> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF002F6C), // Color de tu empresa
+        backgroundColor: rojoOscuro,
         tooltip: 'Iniciar nueva conversación',
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => const StartNewConversationPage(),
-            ),
+            MaterialPageRoute(builder: (_) => const StartNewConversationPage()),
           );
         },
         child: const Icon(Icons.add, size: 32, color: Colors.white),
@@ -122,11 +176,12 @@ class _ConversationListPageState extends State<ConversationListPage> {
 
   String _formatTimestamp(Timestamp timestamp) {
     final date = timestamp.toDate();
-    // Puedes ajustar el formato para mostrar fecha si es un mensaje antiguo
-    if (date.day == DateTime.now().day && date.month == DateTime.now().month && date.year == DateTime.now().year) {
-      return DateFormat('HH:mm').format(date); // Hoy: solo hora
+    if (date.day == DateTime.now().day &&
+        date.month == DateTime.now().month &&
+        date.year == DateTime.now().year) {
+      return DateFormat('HH:mm').format(date);
     } else {
-      return DateFormat('dd/MM').format(date); // Días anteriores: solo día/mes
+      return DateFormat('dd/MM').format(date);
     }
   }
 }
